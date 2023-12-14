@@ -3,7 +3,7 @@ import hashlib
 import hmac
 import io
 import time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone as tzone
 from unittest.mock import patch
 from urllib.parse import quote
 
@@ -344,7 +344,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.assertReadFetch(chart_url, allow_viewers=True, allow_editors=True)
 
         # create some test messages
-        test_date = datetime(2020, 1, 20, 0, 0, 0, 0, timezone.utc)
+        test_date = datetime(2020, 1, 20, 0, 0, 0, 0, tzone.utc)
         test_date - timedelta(hours=2)
         bob = self.create_contact("Bob", phone="+250785551212")
         joe = self.create_contact("Joe", phone="+2501234567890")
@@ -406,7 +406,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         response = self.fetch_protected(tel_channel_read_url, self.admin)
         self.assertContains(response, self.tel_channel.name)
 
-        test_date = datetime(2020, 1, 20, 0, 0, 0, 0, timezone.utc)
+        test_date = datetime(2020, 1, 20, 0, 0, 0, 0, tzone.utc)
         two_hours_ago = test_date - timedelta(hours=2)
         # make sure our channel is old enough to trigger alerts
         self.tel_channel.created_on = two_hours_ago
@@ -1231,11 +1231,11 @@ class ChannelCountTest(TembaTest):
         self.assertEqual(0, ChannelCount.objects.count())
 
         # create some messages...
-        self.create_incoming_msg(contact, "A", created_on=datetime(2023, 5, 31, 13, 0, 30, 0, timezone.utc))
-        self.create_incoming_msg(contact, "B", created_on=datetime(2023, 6, 1, 13, 0, 30, 0, timezone.utc))
-        self.create_incoming_msg(contact, "C", created_on=datetime(2023, 6, 1, 13, 0, 30, 0, timezone.utc))
-        self.create_incoming_msg(contact, "D", created_on=datetime(2023, 6, 1, 13, 0, 30, 0, timezone.utc), voice=True)
-        self.create_outgoing_msg(contact, "E", created_on=datetime(2023, 6, 1, 13, 0, 30, 0, timezone.utc))
+        self.create_incoming_msg(contact, "A", created_on=datetime(2023, 5, 31, 13, 0, 30, 0, tzone.utc))
+        self.create_incoming_msg(contact, "B", created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc))
+        self.create_incoming_msg(contact, "C", created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc))
+        self.create_incoming_msg(contact, "D", created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc), voice=True)
+        self.create_outgoing_msg(contact, "E", created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc))
 
         # and 3 in bulk
         Msg.objects.bulk_create(
@@ -1247,7 +1247,7 @@ class ChannelCountTest(TembaTest):
                     text="F",
                     direction="O",
                     msg_type="T",
-                    created_on=datetime(2023, 6, 1, 13, 0, 30, 0, timezone.utc),
+                    created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc),
                 ),
                 Msg(
                     org=self.org,
@@ -1256,7 +1256,7 @@ class ChannelCountTest(TembaTest):
                     text="G",
                     direction="O",
                     msg_type="T",
-                    created_on=datetime(2023, 6, 1, 13, 0, 30, 0, timezone.utc),
+                    created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc),
                 ),
                 Msg(
                     org=self.org,
@@ -1265,7 +1265,7 @@ class ChannelCountTest(TembaTest):
                     text="H",
                     direction="O",
                     msg_type="V",
-                    created_on=datetime(2023, 6, 1, 13, 0, 30, 0, timezone.utc),
+                    created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc),
                 ),
             ]
         )
