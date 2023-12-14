@@ -670,7 +670,9 @@ class EndpointsTest(APITest):
 
         # try to authenticate with invalid role
         response = self.client.post(auth_url, {"username": "admin@nyaruka.com", "password": "Qwerty123", "role": "X"})
-        self.assertFormError(response, "form", "role", "Select a valid choice. X is not one of the available choices.")
+        self.assertFormError(
+            response.context["form"], "role", "Select a valid choice. X is not one of the available choices."
+        )
 
         # authenticate an admin as an admin
         response = self.client.post(auth_url, {"username": "admin@nyaruka.com", "password": "Qwerty123", "role": "A"})

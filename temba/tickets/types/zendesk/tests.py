@@ -136,8 +136,8 @@ class ZendeskTypeTest(TembaTest):
                 "zendesk_access_token": "sesame",
             },
         )
-        self.assertFormError(response, "form", "name", "This field is required.")
-        self.assertFormError(response, "form", "secret", "This field is required.")
+        self.assertFormError(response.context["form"], "name", "This field is required.")
+        self.assertFormError(response.context["form"], "secret", "This field is required.")
 
         # try submitting with incorrect secret
         response = self.client.post(
@@ -152,7 +152,7 @@ class ZendeskTypeTest(TembaTest):
                 "zendesk_access_token": "sesame",
             },
         )
-        self.assertFormError(response, "form", "secret", "Secret is incorrect.")
+        self.assertFormError(response.context["form"], "secret", "Secret is incorrect.")
 
         # try submitting with correct secret
         response = self.client.post(

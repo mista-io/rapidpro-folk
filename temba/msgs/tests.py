@@ -1171,24 +1171,24 @@ class MsgTest(TembaTest, CRUDLTestMixin):
 
         # try to submit an invalid date (UI doesn't actually allow this)
         response = self.client.post(export_url + "?l=I", {"export_all": 1, "start_date": "xyz"})
-        self.assertFormError(response, "form", "start_date", "Enter a valid date.")
+        self.assertFormError(response.context["form"], "start_date", "Enter a valid date.")
 
         # try to submit without specifying dates (UI doesn't actually allow this)
         response = self.client.post(export_url + "?l=I", {"export_all": 1})
-        self.assertFormError(response, "form", "start_date", "This field is required.")
-        self.assertFormError(response, "form", "end_date", "This field is required.")
+        self.assertFormError(response.context["form"], "start_date", "This field is required.")
+        self.assertFormError(response.context["form"], "end_date", "This field is required.")
 
         # try to submit with start date in future
         response = self.client.post(
             export_url + "?l=I", {"export_all": 1, "start_date": "2200-01-01", "end_date": "2022-09-28"}
         )
-        self.assertFormError(response, "form", None, "Start date can't be in the future.")
+        self.assertFormError(response.context["form"], None, "Start date can't be in the future.")
 
         # try to submit with start date > end date
         response = self.client.post(
             export_url + "?l=I", {"export_all": 1, "start_date": "2022-09-01", "end_date": "2022-03-01"}
         )
-        self.assertFormError(response, "form", None, "End date can't be before start date.")
+        self.assertFormError(response.context["form"], None, "End date can't be before start date.")
 
         # test as anon org to check that URNs don't end up in exports
         with self.anonymous(self.org):
@@ -2631,8 +2631,7 @@ class LabelCRUDLTest(TembaTest, CRUDLTestMixin):
         with override_settings(ORG_LIMIT_DEFAULTS={"labels": current_count}):
             response = self.client.post(create_url, {"name": "CoolStuff"})
             self.assertFormError(
-                response,
-                "form",
+                response.context["form"],
                 "name",
                 "This workspace has reached its limit of 2 labels. "
                 "You must delete existing ones before you can create new ones.",
