@@ -41,6 +41,8 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.functional import cached_property
+from django.templatetags.static import static
+
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
@@ -1180,12 +1182,14 @@ class MenuMixin(OrgPermsMixin):
             menu_item["bubble"] = bubble
 
         if icon:
-            menu_item["icon"] = icon
+            menu_item["icon"] = icon 
+        
 
         if count is not None:
             menu_item["count"] = count
 
         if endpoint:
+            print(endpoint)
             if endpoint[0] == "/":  # pragma: no cover
                 menu_item["endpoint"] = endpoint
             elif perm or self.has_org_perm(endpoint):
@@ -1476,6 +1480,8 @@ class OrgCRUDL(SmartCRUDL):
                     href="flows.flow_list",
                     perm="flows.flow_list",
                 ),
+            
+
                 self.create_menu_item(
                     menu_id="trigger",
                     name=_("Triggers"),
@@ -1499,6 +1505,19 @@ class OrgCRUDL(SmartCRUDL):
                     endpoint="tickets.ticket_menu",
                     href="tickets.ticket_list",
                 ),
+                 #ussd menu
+
+                self.create_menu_item(
+                    menu_id="ussd",
+                    name=_("USSD"),
+                    icon='zap',
+                    endpoint="tickets.ticket_menu",
+                    href="ussd.ussd_menu",
+                    #perm="ussd.ussd_menu",
+                  
+                ),
+
+
             ]
 
             if org:

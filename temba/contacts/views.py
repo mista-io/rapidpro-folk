@@ -499,7 +499,8 @@ class ContactCRUDL(SmartCRUDL):
             menu = [
                 {
                     "id": "active",
-                    "count": counts[Contact.STATUS_ACTIVE],
+                    "count": counts.get(Contact.STATUS_ACTIVE, 0),
+
                     "name": _("Active"),
                     "href": reverse("contacts.contact_list"),
                     "icon": "active",
@@ -507,20 +508,22 @@ class ContactCRUDL(SmartCRUDL):
                 {
                     "id": "archived",
                     "icon": "archive",
-                    "count": counts[Contact.STATUS_ARCHIVED],
+                    "count": counts.get(Contact.STATUS_ARCHIVED, 0),
+
                     "name": _("Archived"),
                     "href": reverse("contacts.contact_archived"),
                 },
                 {
                     "id": "blocked",
-                    "count": counts[Contact.STATUS_BLOCKED],
+                    "count": counts.get(Contact.STATUS_BLOCKED, 0),
+
                     "name": _("Blocked"),
                     "href": reverse("contacts.contact_blocked"),
                     "icon": "contact_blocked",
                 },
                 {
                     "id": "stopped",
-                    "count": counts[Contact.STATUS_STOPPED],
+                    "count": counts.get(Contact.STATUS_STOPPED, 0),
                     "name": _("Stopped"),
                     "href": reverse("contacts.contact_stopped"),
                     "icon": "contact_stopped",

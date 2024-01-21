@@ -2255,6 +2255,10 @@ msgstr ""
 msgid "The search query"
 msgstr ""
 
+
+msgid "Search"
+msgstr ""
+
 msgid "Import file appears to be empty."
 msgstr ""
 

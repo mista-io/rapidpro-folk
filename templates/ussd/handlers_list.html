@@ -1,0 +1,139 @@
+{% extends "smartmin/list.html" %}
+{% load smartmin sms temba compress i18n humanize %}
+
+{% block page-title %}
+  {% trans "Handlers" %}
+{% endblock %}
+
+{% block page-top %}{% endblock %}
+
+{% block content %}
+  <div id="pjax">
+    {% block pjax %}
+      <div class="lp-frame">
+        <div class="left flex flex-col">
+          {% if org_perms.ussd.handler_create %}
+            <div class="w-64 mr-5">
+              <temba-modax header="Create USSD Handler" endpoint="{% url 'ussd.handler_create' %}">
+                <button class="button-primary block">
+                  {% trans "Create USSD Handler" %}
+                </button>
+              </temba-modax>
+            </div>
+          {% endif %}
+
+          {% if paginator.count > 0 %}
+            <div class="lp-nav lower">
+              <div class="font-normal uppercase text-xs text-gray-500 pb-1">
+                {% trans "Logs" %}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="right">
+          {% if org_has_handlers %}
+            <div class="flex w-full items-end mb-4">
+              <div class="action-buttons list-buttons-container h-full mr-2 flex-grow">
+                <div class="list-buttons flex items-center -mx-2 h-full">
+                  {% if 'archive' in actions and org_perms.flows.flow_update %}
+                    <div class="button-action object-btn-restore">
+                      <div class="-mt-1 mr-2 glyph icon-checkmark"></div>
+                      {% trans "Activate" %}
+                    </div>
+                  {% endif %}
+
+                  {% if 'disable' in actions and org_perms.flows.flow_update %}
+                    <div class="button-action object-btn-archive">
+                      <div class="-mt-1 mr-2 glyph icon-box"></div>
+                      {% trans "Disable" %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="flex-grow ml-2 items-center">
+                {% block title-text %}
+                  <div class="page-title leading-tight">
+                    {{ title }}
+                  </div>
+                {% endblock %}
+              </div>
+            </div>
+
+            {% if view.search_fields %}
+              <form id="search-form" class="mb-4" method="get">
+                <temba-textinput type="text" placeholder="{% trans 'Search' %}" name="search" value="{{ search }}">
+                </temba-textinput>
+                {% if request.REQUEST.status %}
+                  <input type="hidden" name="status" value="{{ request.REQUEST.status }}">
+                {% endif %}
+              </form>
+            {% endif %}
+
+            {% block flow-list %}
+              <table class="list lined selectable">
+                <thead>
+                  <tr>
+                    {% if org_perms.ussd.handler_update %}
+                      <th></th>
+                    {% endif %}
+                    <th>Aggregator</th>
+                    <th>Channel</th>
+                    <th>Shortcode</th>
+                    <th>Flow Trigger</th>
+                    <th>Last Accessed</th>
+                    <th>Auth Scheme</th>
+                  </tr>
+                </thead>
+                <tr>
+                {%for object in object_list %}
+                <tr>
+                    <tr class="object-row select-row" data-object-id="{{ object.id }}"
+                    onrowclick='gotoLink("{% url "ussd.handler_update" object.id %}")'>
+                    {% if org_perms.ussd.handler_update %}
+                      <td class="checkbox object-row-checkbox">
+                        <temba-checkbox onclick="handleRowSelection(this)"></temba-checkbox>
+                      </td>
+                      {% endif %}
+                <td>{{ object.aggregator}}</td>
+                <td>{{ object.channel.name}}</td>
+                <td> {{ object.short_code}}</td>
+                <td>{{ object.trigger_word}}</td>
+                <td>{{ object.last_accessed_at}}</td>
+                <td>
+                    {% if object.auth_scheme == 'TOKEN' %}
+                        <span class="badge badge-success">Token&nbsp;{{object.auth_token}}</span>
+                    {% else %}
+                        <span class="badge badge-danger">Not Required</span>
+                    {% endif %}
+                </td>
+                </tr>
+                {% endfor %}
+                  {% if object_list|length == 0 %}
+                    <tr class="empty_list">
+                      <td colspan="99">{% trans "No matching Handlers." %}</td>
+                    </tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            {% endblock %}
+
+            {% block paginator %}
+              <div class="mt-3">
+                {% include "includes/pagination.html" %}
+              </div>
+            {% endblock %}
+
+          {% else %}
+            {% include "ussd/empty_include.html" %}
+          {% endif %}
+        </div>
+      </div>
+    {% endblock %}
+  </div>
+
+  {% block extra-script %}
+    {{ block.super }}
+  {% endblock %}
+{% endblock %}

@@ -59,6 +59,9 @@ msgstr "Application APK du pack de messages"
 msgid "Message"
 msgstr "Message"
 
+msgid "Search"
+msgstr ""
+
 msgid "Run"
 msgstr "Exécuter"
 

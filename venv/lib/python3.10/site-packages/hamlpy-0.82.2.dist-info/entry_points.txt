@@ -1,0 +1,3 @@
+[console_scripts]
+hamlpy = hamlpy.hamlpy:convert_files
+hamlpy-watcher = hamlpy.hamlpy_watcher:watch_folder

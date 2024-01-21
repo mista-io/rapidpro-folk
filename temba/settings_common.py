@@ -250,6 +250,8 @@ INSTALLED_APPS = (
     "temba.locations",
     "temba.airtime",
     "temba.sql",
+    "temba.ussd",
+    "temba.ussd_api",
 )
 
 # the last installed app that uses smartmin permissions
@@ -503,6 +505,9 @@ GROUP_PERMISSIONS = {
         "tickets.ticket.*",
         "tickets.topic.*",
         "triggers.trigger.*",
+        "ussd.ussd_menu",
+        "ussd.handlers",
+
     ),
     "Editors": (
         "airtime.airtimetransfer_list",
@@ -584,6 +589,9 @@ GROUP_PERMISSIONS = {
         "tickets.ticket.*",
         "tickets.topic.*",
         "triggers.trigger.*",
+        "ussd.ussd_menu",
+        "ussd.handlers",
+
     ),
     "Viewers": (
         "campaigns.campaign_archived",
@@ -658,6 +666,9 @@ GROUP_PERMISSIONS = {
         "tickets.topic_list",
         "triggers.trigger_list",
         "triggers.trigger_menu",
+        "ussd.ussd_menu",
+        "ussd.handlers",
+
     ),
     "Agents": (
         "contacts.contact_history",
@@ -671,6 +682,10 @@ GROUP_PERMISSIONS = {
         "tickets.ticket_note",
         "tickets.ticket_update",
         "tickets.topic_list",
+        "ussd.ussd_menu",
+        "ussd.handlers",
+
+
     ),
     "Prometheus": (),
 }
@@ -714,9 +729,9 @@ ANONYMOUS_USER_NAME = "AnonymousUser"
 _services_host = "host.docker.internal" if os.getenv("REMOTE_CONTAINERS") == "true" else "localhost"
 _default_database_config = {
     "ENGINE": "django.contrib.gis.db.backends.postgis",
-    "NAME": "temba",
-    "USER": "temba",
-    "PASSWORD": "temba",
+    "NAME": "rp_folk_db",
+    "USER": "rpfolk",
+    "PASSWORD": "rp-folk",
     "HOST": _services_host,
     "PORT": "5432",
     "ATOMIC_REQUESTS": True,
@@ -744,6 +759,17 @@ CACHES = {
         "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
     }
 }
+
+
+# -----------------------------------------------------------------------------------
+# Caching using Redis
+# -----------------------------------------------------------------------------------
+REDIS_HOST = "localhost"
+REDIS_PORT = 6379
+REDIS_DB = 10 if TESTING else 15  # we use a redis db of 10 for testing so that we maintain caches for dev
+
+# -----------------------------------------------------------------------------------
+
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 SESSION_CACHE_ALIAS = "default"
