@@ -3016,9 +3016,17 @@ class OrgCRUDL(SmartCRUDL):
             def lang_json(code):
                 return {"value": code, "name": languages.get_name(code)}
 
+            if org.flow_languages:
+                primary_lang_code = org.flow_languages[0]
+                initial["primary_lang"] = [lang_json(primary_lang_code)]
+            else:
+                # Handle the case where org.flow_languages is an empty list
+                initial["primary_lang"] = []
+
             non_primary_langs = org.flow_languages[1:] if len(org.flow_languages) > 1 else []
             initial["other_langs"] = [lang_json(ln) for ln in non_primary_langs]
-            initial["primary_lang"] = [lang_json(org.flow_languages[0])]
+
+        
             return initial
 
         def get_context_data(self, **kwargs):
