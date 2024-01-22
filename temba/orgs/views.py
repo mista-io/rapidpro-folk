@@ -3033,12 +3033,18 @@ class OrgCRUDL(SmartCRUDL):
             context = super().get_context_data(**kwargs)
             org = self.get_object()
 
-            primary_lang = languages.get_name(org.flow_languages[0])
-            other_langs = sorted([languages.get_name(code) for code in org.flow_languages[1:]])
+            primary_lang = None
+            other_langs = []
+
+            if org.flow_languages:
+                primary_lang = languages.get_name(org.flow_languages[0])
+                other_langs = sorted([languages.get_name(code) for code in org.flow_languages[1:]])
 
             context["primary_lang"] = primary_lang
             context["other_langs"] = other_langs
+
             return context
+
 
         def get(self, request, *args, **kwargs):
             if self.request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest":
