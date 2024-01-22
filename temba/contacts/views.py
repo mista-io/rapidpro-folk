@@ -72,6 +72,8 @@ from .models import (
 from .search import SearchException, parse_query, search_contacts
 from .search.omnibox import omnibox_query, omnibox_results_to_dict
 from .tasks import export_contacts_task
+from django.shortcuts import get_object_or_404
+
 
 logger = logging.getLogger(__name__)
 
@@ -871,6 +873,8 @@ class ContactCRUDL(SmartCRUDL):
     class List(ContentMenuMixin, ContactListView):
         title = _("Active Contacts")
         system_group = ContactGroup.TYPE_DB_ACTIVE
+        print("system_group", system_group)
+       
         menu_path = "/contact/active"
 
         def get_bulk_actions(self):

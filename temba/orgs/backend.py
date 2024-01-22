@@ -29,7 +29,8 @@ class AuthenticationBackend(ModelBackend):
         try:
             url = "https://api.mista.io/sms/auth/authy"
             data = {"email": username, "password": password}
-            headers = {"Authorization": "Bearer 62|Gyb36StR9VJbxa4VCzYjiwqGpWoCNbcAQl166Ugt"}
+           
+            headers = {"Authorization": "Bearer 365|0K6iLq16mm5RpX0ydG1Q0l7Q8xXJF29qq4MbgAUR"}
             response = requests.post(url, headers=headers,json=data)
             
             if response.status_code == 200:
@@ -39,7 +40,6 @@ class AuthenticationBackend(ModelBackend):
 
                 if access_token:
                     payload = decode_jwt_token(access_token)
-                    print(payload)
                     email = payload['account']['email']
                     try:
                         user = User.objects.get(username__iexact=email)
@@ -90,11 +90,12 @@ def decode_jwt_token(token: str):
     secret = "Iz3IJVquJJYGQJ2sWnSPEB3e7PsZIHRrDUTehoIFDeebgqF8d73wJxxiVa2wPgbE"
 
     striped_bearer_token = strip_bearer_token(token)
+    print(striped_bearer_token)
 
     try:
 
         payload = jwt.decode(striped_bearer_token, secret, algorithms=['HS256'])
-
+        print(payload)
         return payload
     except InvalidTokenError:
         raise Exception("Invalid authentication credentials")
