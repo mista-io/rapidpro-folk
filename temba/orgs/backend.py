@@ -6,6 +6,9 @@ from django_redis import get_redis_connection
 import logging
 import jwt, json, redis
 from jwt.exceptions import InvalidTokenError
+from temba.contacts.models import ContactGroup
+from temba.orgs.models import Org
+
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +43,7 @@ class AuthenticationBackend(ModelBackend):
 
                 if access_token:
                     payload = decode_jwt_token(access_token)
+                    print(payload)
                     email = payload['account']['email']
                     try:
                         user = User.objects.get(username__iexact=email)
@@ -53,20 +57,32 @@ class AuthenticationBackend(ModelBackend):
                         organization = payload['account']['organization']
                         user = User.objects.create_user(
                             username=email,
+                            email=email,
                             first_name=first_name,
                             last_name=last_name,
-                            password=None  # Password is handled by the authentication service
+                            password=None , # Password is handled by the authentication service
                         )
                         logger.info("New user created after call from auth service")
                         # create the Organisation
                         anonymous = User.objects.get(pk=1)  # the default anonymous user
                         org_data = dict(name=organization, created_by=anonymous,
                                         modified_by=anonymous,
+                                        language='en-us',
                                         timezone=settings.USER_TIME_ZONE)
 
                         org = Org.objects.create(**org_data)
                         org.add_user(user, OrgRole.ADMINISTRATOR)
+                        # create defaul contact group
+                       
                         logger.info("New user Added to an organisation")
+                        # create the default group
+                        default_group = ContactGroup.create_system_groups(org)
+                        if default_group:
+                            logger.info("Default group created")
+                        # # create sample flows
+                        # sample_flows = Org.create_sample_flows(org,'https://api.mista.io/sms/flow/1')   
+                        # if sample_flows:
+                        #     logger.info("Sample flows created")     
                     return user
                 else:
                     return None
@@ -74,6 +90,8 @@ class AuthenticationBackend(ModelBackend):
             # Run the default password hasher once to reduce the timing
             # difference between an existing and a non-existing user (#20760).
             User().set_password(password)
+     
+
 
     def get_user(self, user_id):
         try:

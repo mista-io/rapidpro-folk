@@ -872,8 +872,8 @@ class ContactCRUDL(SmartCRUDL):
 
     class List(ContentMenuMixin, ContactListView):
         title = _("Active Contacts")
-        system_group = ContactGroup.TYPE_DB_ACTIVE
-        print("system_group", system_group)
+        system_group = ContactGroup.TYPE_DB_ACTIVE 
+        # print("system_group", system_group)
        
         menu_path = "/contact/active"
 
@@ -924,6 +924,7 @@ class ContactCRUDL(SmartCRUDL):
 
             context["contact_fields"] = ContactField.get_fields(org).order_by("-show_in_table", "-priority", "id")[0:6]
             return context
+    
 
     class Blocked(ContentMenuMixin, ContactListView):
         title = _("Blocked Contacts")
