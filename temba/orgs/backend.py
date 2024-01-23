@@ -67,7 +67,7 @@ class AuthenticationBackend(ModelBackend):
                         anonymous = User.objects.get(pk=1)  # the default anonymous user
                         org_data = dict(name=organization, created_by=anonymous,
                                         modified_by=anonymous,
-                                        language="en-us",
+                                        language=settings.DEFAULT_LANGUAGE,
                                         timezone=settings.USER_TIME_ZONE)
 
                         org = Org.objects.create(**org_data)
