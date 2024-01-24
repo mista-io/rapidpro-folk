@@ -28,7 +28,7 @@ from temba.assets.models import register_asset_store
 from temba.channels.models import Channel, ChannelEvent
 from temba.locations.models import AdminBoundary
 from temba.mailroom import ContactSpec, modifiers, queue_populate_dynamic_group
-from temba.orgs.models import DependencyMixin, Org, OrgRole
+from temba.orgs.models import DependencyMixin, Export, ExportType, Org, OrgRole
 from temba.utils import chunk_list, format_number, on_transaction_commit
 from temba.utils.export import BaseExport, BaseExportAssetStore, MultiSheetExporter
 from temba.utils.models import JSONField, LegacyUUIDMixin, SquashableModel, TembaModel
@@ -1346,6 +1346,7 @@ class ContactURN(models.Model):
         URN.VIBER_SCHEME,
         URN.TELEGRAM_SCHEME,
         URN.INSTAGRAM_SCHEME,
+        URN.WEBCHAT_SCHEME,
     }
     SCHEMES_SUPPORTING_REFERRALS = {URN.FACEBOOK_SCHEME}  # schemes that support "referral" triggers
     SCHEMES_SUPPORTING_OPTINS = {URN.FACEBOOK_SCHEME}  # schemes that support opt-in/opt-out triggers
@@ -1848,6 +1849,10 @@ class ContactGroupCount(SquashableModel):
 
 
 class ExportContactsTask(BaseExport):
+    """
+    TODO migrate to orgs.Export and drop.
+    """
+
     analytics_key = "contact_export"
     notification_export_type = "contact"
 
@@ -1863,13 +1868,30 @@ class ExportContactsTask(BaseExport):
 
     search = models.TextField(null=True, blank=True, help_text=_("The search query"))
 
+
+class ContactExport(ExportType):
+    """
+    Export of contacts
+    """
+
+    slug = "contact"
+    download_prefix = "contacts"
+
     @classmethod
-    def create(cls, org, user, group=None, search=None, group_memberships=()):
-        export = cls.objects.create(org=org, group=group, search=search, created_by=user, modified_by=user)
-        export.group_memberships.add(*group_memberships)
+    def create(cls, org, user, group=None, search=None, with_groups=()):
+        export = Export.objects.create(
+            org=org,
+            export_type=cls.slug,
+            config={
+                "group_id": group.id if group else None,
+                "search": search,
+                "with_groups": [g.id for g in with_groups],
+            },
+            created_by=user,
+        )
         return export
 
-    def get_export_fields_and_schemes(self):
+    def get_export_fields_and_schemes(self, export):
         fields = [
             dict(label="Contact UUID", key="uuid", field=None, urn_scheme=None),
             dict(label="Name", key="name", field=None, urn_scheme=None),
@@ -1880,15 +1902,15 @@ class ExportContactsTask(BaseExport):
         ]
 
         # anon orgs also get an ID column that is just the PK
-        if self.org.is_anon:
+        if export.org.is_anon:
             fields = [
                 dict(label="ID", key="id", field=None, urn_scheme=None),
                 dict(label="Scheme", key="scheme", field=None, urn_scheme=None),
             ] + fields
 
         scheme_counts = dict()
-        if not self.org.is_anon:
-            org_urns = self.org.urns.using("readonly")
+        if not export.org.is_anon:
+            org_urns = export.org.urns.using("readonly")
             schemes_in_use = sorted(list(org_urns.order_by().values_list("scheme", flat=True).distinct()))
             scheme_contact_max = {}
 
@@ -1916,7 +1938,7 @@ class ExportContactsTask(BaseExport):
                     )
 
         contact_fields_list = (
-            ContactField.get_fields(self.org).using("readonly").select_related("org").order_by("-priority", "pk")
+            ContactField.get_fields(export.org).using("readonly").select_related("org").order_by("-priority", "pk")
         )
         for contact_field in contact_fields_list:
             fields.append(
@@ -1929,28 +1951,34 @@ class ExportContactsTask(BaseExport):
             )
 
         group_fields = []
-        for group in self.group_memberships.all():
+        for group in export.get_contact_groups():
             group_fields.append(dict(label="Group:%s" % group.name, key=None, group_id=group.id, group=group))
 
         return fields, scheme_counts, group_fields
 
-    def write_export(self):
-        fields, scheme_counts, group_fields = self.get_export_fields_and_schemes()
-        group = self.group or self.org.active_contacts_group
+    def write(self, export):
+        fields, scheme_counts, group_fields = self.get_export_fields_and_schemes(export)
+        group_id = export.config.get("group_id")
+        search = export.config.get("search")
 
-        include_group_memberships = bool(self.group_memberships.exists())
-
-        if self.search:
-            contact_ids = elastic.query_contact_ids(self.org, self.search, group=group)
+        if group_id:
+            group = export.org.groups.filter(id=group_id).get()
         else:
-            contact_ids = group.contacts.order_by("name", "id").values_list("id", flat=True)
+            group = export.org.active_contacts_group
+
+        include_group_memberships = bool(len(group_fields) > 0)
+
+        if search:
+            contact_ids = elastic.query_contact_ids(export.org, search, group=group)
+        else:
+            contact_ids = group.contacts.using("readonly").order_by("name", "id").values_list("id", flat=True)
 
         # create our exporter
         exporter = MultiSheetExporter(
-            "Contact", [f["label"] for f in fields] + [g["label"] for g in group_fields], self.org.timezone
+            "Contact", [f["label"] for f in fields] + [g["label"] for g in group_fields], export.org.timezone
         )
 
-        total_exported_contacts = 0
+        num_records = 0
         start = time.time()
 
         # write out contacts in batches to limit memory usage
@@ -1970,7 +1998,7 @@ class ExportContactsTask(BaseExport):
 
                 values = []
                 for field in fields:
-                    values.append(self.get_field_value(field, contact))
+                    values.append(self.get_field_value(export.org, field, contact=contact))
 
                 group_values = []
                 if include_group_memberships:
@@ -1981,31 +2009,31 @@ class ExportContactsTask(BaseExport):
 
                 # write this contact's values
                 exporter.write_row(values + group_values)
-                total_exported_contacts += 1
+                num_records += 1
 
                 # output some status information every 10,000 contacts
-                if total_exported_contacts % ExportContactsTask.LOG_PROGRESS_PER_ROWS == 0:
+                if num_records % Export.LOG_PROGRESS_PER_ROWS == 0:
                     elapsed = time.time() - start
-                    predicted = elapsed // (total_exported_contacts / len(contact_ids))
+                    predicted = elapsed // (num_records / len(contact_ids))
 
                     logger.info(
                         "Export of %s contacts - %d%% (%s/%s) complete in %0.2fs (predicted %0.0fs)"
                         % (
-                            self.org.name,
-                            total_exported_contacts * 100 // len(contact_ids),
-                            "{:,}".format(total_exported_contacts),
+                            export.org.name,
+                            num_records * 100 // len(contact_ids),
+                            "{:,}".format(num_records),
                             "{:,}".format(len(contact_ids)),
                             time.time() - start,
                             predicted,
                         )
                     )
 
-                    self.modified_on = timezone.now()
-                    self.save(update_fields=["modified_on"])
+                    export.modified_on = timezone.now()
+                    export.save(update_fields=["modified_on"])
 
-        return exporter.save_file()
+        return *exporter.save_file(), num_records
 
-    def get_field_value(self, field: dict, contact: Contact):
+    def get_field_value(self, org, field: dict, contact: Contact):
         if field["key"] == "name":
             return contact.name
         elif field["key"] == "uuid":
@@ -2032,7 +2060,7 @@ class ExportContactsTask(BaseExport):
             position = field["position"]
             if len(scheme_urns) > position:
                 urn_obj = scheme_urns[position]
-                return urn_obj.get_display(org=self.org, formatted=False) if urn_obj else ""
+                return urn_obj.get_display(org=org, formatted=False) if urn_obj else ""
             else:
                 return ""
         else:

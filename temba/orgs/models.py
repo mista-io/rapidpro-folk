@@ -1,9 +1,10 @@
 import itertools
 import logging
+import mimetypes
 import os
 from abc import ABCMeta
 from collections import defaultdict
-from datetime import timedelta
+from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -15,12 +16,15 @@ import pytz
 from packaging.version import Version
 from smartmin.models import SmartModel
 from smartmin.users.models import FailedLogin, RecoveryToken
+from storages.backends.s3boto3 import S3Boto3Storage
 from timezone_field import TimeZoneField
 
 from django.conf import settings
 from django.contrib.auth.models import Group, Permission, User as AuthUser
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.validators import ArrayMinLengthValidator
+from django.core.files import File
+from django.core.files.storage import default_storage
 from django.db import models, transaction
 from django.db.models import Prefetch
 from django.urls import reverse
@@ -36,7 +40,7 @@ from temba.locations.models import AdminBoundary
 from temba.utils import json, languages, on_transaction_commit
 from temba.utils.dates import datetime_to_str
 from temba.utils.email import send_template_email
-from temba.utils.models import JSONField, delete_in_batches
+from temba.utils.models import JSONField, TembaUUIDMixin, delete_in_batches
 from temba.utils.text import generate_secret, generate_token
 from temba.utils.timezones import timezone_to_country_code
 from temba.utils.uuid import uuid4
@@ -1309,6 +1313,7 @@ class Org(SmartModel):
         delete_in_batches(self.exportmessagestasks.all())
         delete_in_batches(self.exportflowresultstasks.all())
         delete_in_batches(self.exportticketstasks.all())
+        delete_in_batches(self.exports.all())
         delete_in_batches(self.flow_labels.all())
 
         for imp in self.contact_imports.all():
@@ -1574,3 +1579,217 @@ class BackupToken(models.Model):
 
     def __str__(self):
         return self.token
+
+
+class ExportType:
+    slug: str
+    download_prefix: str
+
+    def write(self, export) -> tuple:  # pragma: no cover
+        """
+        Should return tuple of 1) temporary file handle, 2) file extension, 3) count of items exported
+        """
+        pass
+
+
+class Export(TembaUUIDMixin, models.Model):
+    """
+    An export of workspace data initiated by a user
+    """
+
+    STATUS_PENDING = "P"
+    STATUS_PROCESSING = "O"
+    STATUS_COMPLETE = "C"
+    STATUS_FAILED = "F"
+    STATUS_CHOICES = (
+        (STATUS_PENDING, _("Pending")),
+        (STATUS_PROCESSING, _("Processing")),
+        (STATUS_COMPLETE, _("Complete")),
+        (STATUS_FAILED, _("Failed")),
+    )
+
+    # log progress after this number of exported objects have been exported
+    LOG_PROGRESS_PER_ROWS = 10000
+
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="exports")
+    export_type = models.CharField(max_length=20)
+    status = models.CharField(max_length=1, default=STATUS_PENDING, choices=STATUS_CHOICES)
+    num_records = models.IntegerField(null=True)
+    path = models.CharField(null=True, max_length=2048)
+
+    # date range (optional depending on type)
+    start_date = models.DateField(null=True)
+    end_date = models.DateField(null=True)
+
+    # additional type specific filtering and extra columns
+    config = models.JSONField(default=dict)
+
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="exports")
+    created_on = models.DateTimeField(default=timezone.now)
+    modified_on = models.DateTimeField(default=timezone.now)
+
+    def start(self):
+        from .tasks import perform_export
+
+        perform_export.delay(self.id)
+
+    def perform(self):
+        from temba.notifications.types.builtin import ExportFinishedNotificationType
+
+        assert self.status != self.STATUS_PROCESSING, "can't start an export that's already processing"
+
+        self.status = self.STATUS_PROCESSING
+        self.save(update_fields=("status", "modified_on"))
+
+        try:
+            temp_file, extension, num_records = self.type.write(self)
+
+            # save file to storage
+            directory = os.path.join(settings.STORAGE_ROOT_DIR, str(self.org.id), self.type.slug + "_exports")
+            path = f"{directory}/{self.uuid}.{extension}"
+            default_storage.save(path, File(temp_file))
+
+            # remove temporary file
+            if hasattr(temp_file, "delete"):
+                if temp_file.delete is False:  # pragma: no cover
+                    os.unlink(temp_file.name)
+            else:  # pragma: no cover
+                os.unlink(temp_file.name)
+
+        except Exception as e:  # pragma: no cover
+            self.status = self.STATUS_FAILED
+            self.save(update_fields=("status", "modified_on"))
+            raise e
+        else:
+            self.status = self.STATUS_COMPLETE
+            self.num_records = num_records
+            self.path = path
+            self.save(update_fields=("status", "num_records", "path", "modified_on"))
+
+            ExportFinishedNotificationType.create(self)
+
+    @classmethod
+    def get_unfinished(cls, export_type: str):
+        """
+        Returns all unfinished exports
+        """
+        return cls.objects.filter(export_type=export_type, status__in=(cls.STATUS_PENDING, cls.STATUS_PROCESSING))
+
+    @classmethod
+    def has_recent_unfinished(cls, org, export_type: str) -> bool:
+        """
+        Checks for unfinished exports created in the last 4 hours for this org
+        """
+
+        day_ago = timezone.now() - timedelta(hours=4)
+
+        return cls.get_unfinished(export_type).filter(org=org, created_on__gt=day_ago).order_by("created_on").exists()
+
+    def get_date_range(self) -> tuple:
+        """
+        Gets the since > until datetimes of items to export.
+        """
+        tz = self.org.timezone
+        start_date = max(datetime.combine(self.start_date, datetime.min.time()).replace(tzinfo=tz), self.org.created_on)
+        end_date = datetime.combine(self.end_date, datetime.max.time()).replace(tzinfo=tz)
+        return start_date, end_date
+
+    def get_contact_fields(self):
+        ids = self.config.get("with_fields", [])
+        id_by_order = {id: i for i, id in enumerate(ids)}
+        return sorted(self.org.fields.filter(id__in=ids).using("readonly"), key=lambda o: id_by_order[o.id])
+
+    def get_contact_groups(self):
+        ids = self.config.get("with_groups", [])
+        id_by_order = {id: i for i, id in enumerate(ids)}
+        return sorted(self.org.groups.filter(id__in=ids).using("readonly"), key=lambda o: id_by_order[o.id])
+
+    def get_contact_headers(self) -> list:
+        """
+        Gets the header values common to exports with contacts.
+        """
+        cols = ["Contact UUID", "Contact Name", "URN Scheme"]
+        if self.org.is_anon:
+            cols.append("Anon Value")
+        else:
+            cols.append("URN Value")
+
+        for cf in self.get_contact_fields():
+            cols.append("Field:%s" % cf.name)
+
+        for cg in self.get_contact_groups():
+            cols.append("Group:%s" % cg.name)
+
+        return cols
+
+    def get_contact_columns(self, contact, urn: str = "") -> list:
+        """
+        Gets the column values for the given contact.
+        """
+        from temba.contacts.models import URN
+
+        if urn == "":
+            urn_obj = contact.get_urn()
+            urn_scheme, urn_path = (urn_obj.scheme, urn_obj.path) if urn_obj else (None, None)
+        elif urn is not None:  # pragma: no cover
+            urn_scheme = URN.to_parts(urn)[0]
+            urn_path = URN.format(urn, international=False, formatted=False)
+        else:
+            urn_scheme, urn_path = None, None  # pragma: no cover
+
+        cols = [str(contact.uuid), contact.name, urn_scheme]
+        if self.org.is_anon:
+            cols.append(contact.anon_display)
+        else:
+            cols.append(urn_path)
+
+        for cf in self.get_contact_fields():
+            cols.append(contact.get_field_display(cf))
+
+        memberships = set(contact.groups.all())
+
+        for cg in self.get_contact_groups():
+            cols.append(cg in memberships)
+
+        return cols
+
+    @classmethod
+    def _get_types(cls) -> dict:
+        return {t.slug: t() for t in ExportType.__subclasses__()}
+
+    @property
+    def type(self):
+        return self._get_types()[self.export_type]
+
+    def get_raw_access(self) -> tuple[str]:
+        """
+        Gets a tuple of 1) raw storage URL, 2) a friendly filename and 3) its MIME type
+        """
+
+        filename = self._get_download_filename()
+
+        if isinstance(default_storage, S3Boto3Storage):  # pragma: needs cover
+            url = default_storage.url(
+                self.path,
+                parameters=dict(ResponseContentDisposition=f"attachment;filename={filename}"),
+                http_method="GET",
+            )
+        else:
+            url = default_storage.url(self.path)
+
+        return url, filename, mimetypes.guess_type(self.path)[0]
+
+    def _get_download_filename(self):
+        """
+        Create a more user friendly filename for download
+        """
+        _, extension = self.path.rsplit(".", 1)
+        date_str = datetime.today().strftime(r"%Y%m%d")
+        return f"{self.type.download_prefix}_{date_str}.{extension}"
+
+    @property
+    def notification_export_type(self):
+        return self.type.slug
+
+    def get_notification_scope(self) -> str:
+        return f"{self.notification_export_type}:{self.id}"
