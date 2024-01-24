@@ -6,8 +6,7 @@ from celery import shared_task
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from temba.contacts.models import URN, ContactURN, ExportContactsTask
-from temba.contacts.tasks import export_contacts_task
+from temba.contacts.models import URN, ContactURN
 from temba.flows.models import ExportFlowResultsTask
 from temba.flows.tasks import export_flow_results_task
 from temba.msgs.models import ExportMessagesTask
@@ -16,13 +15,21 @@ from temba.utils.crons import cron_task
 from temba.utils.email import send_template_email
 from temba.utils.text import generate_secret
 
-from .models import Invitation, Org, OrgImport, User, UserSettings
+from .models import Export, Invitation, Org, OrgImport, User, UserSettings
 
 
 @shared_task
 def start_org_import_task(import_id):
     org_import = OrgImport.objects.get(id=import_id)
     org_import.start()
+
+
+@shared_task
+def perform_export(export_id):
+    """
+    Perform an export
+    """
+    Export.objects.select_related("org", "created_by").get(id=export_id).perform()
 
 
 @shared_task
@@ -67,15 +74,15 @@ def normalize_contact_tels_task(org_id):
 
 
 @cron_task(lock_timeout=7200)
-def resume_failed_tasks():
+def restart_stalled_exports():
     now = timezone.now()
     window = now - timedelta(hours=1)
 
-    contact_exports = ExportContactsTask.objects.filter(modified_on__lte=window).exclude(
-        status__in=[ExportContactsTask.STATUS_COMPLETE, ExportContactsTask.STATUS_FAILED]
+    exports = Export.objects.filter(modified_on__lte=window).exclude(
+        status__in=[Export.STATUS_COMPLETE, Export.STATUS_FAILED]
     )
-    for contact_export in contact_exports:
-        export_contacts_task.delay(contact_export.pk)
+    for export in exports:
+        perform_export.delay(export.pk)
 
     flow_results_exports = ExportFlowResultsTask.objects.filter(modified_on__lte=window).exclude(
         status__in=[ExportFlowResultsTask.STATUS_COMPLETE, ExportFlowResultsTask.STATUS_FAILED]

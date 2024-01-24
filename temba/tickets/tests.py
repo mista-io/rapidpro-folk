@@ -8,19 +8,20 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from temba.contacts.models import Contact, ContactField, ContactURN
+from temba.contacts.models import Contact, ContactField, ContactGroup, ContactURN
+from temba.orgs.models import Export
 from temba.tests import CRUDLTestMixin, TembaTest, matchers, mock_mailroom
 from temba.utils.dates import datetime_to_timestamp
 from temba.utils.uuid import uuid4
 
 from .models import (
-    ExportTicketsTask,
     Team,
     Ticket,
     TicketCount,
     TicketDailyCount,
     TicketDailyTiming,
     TicketEvent,
+    TicketExport,
     Topic,
     export_ticket_stats,
 )
@@ -608,7 +609,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         export_url = reverse("tickets.ticket_export")
 
         # create a dummy export task so that we won't be able to export
-        blocking_export = ExportTicketsTask.create(
+        blocking_export = TicketExport.create(
             self.org, self.admin, start_date=date.today() - timedelta(days=7), end_date=date.today(), with_fields=()
         )
         response = self.client.post(export_url, {"start_date": "2022-06-28", "end_date": "2022-09-28"})
@@ -618,11 +619,12 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertContains(response, "already an export in progress")
 
         # ok mark that export as finished and try again
-        blocking_export.update_status(ExportTicketsTask.STATUS_COMPLETE)
+        blocking_export.status = Export.STATUS_COMPLETE
+        blocking_export.save(update_fields=("status",))
 
         response = self.client.post(export_url, {"start_date": "2022-06-28", "end_date": "2022-09-28"})
         self.assertModalResponse(response, redirect="/ticket/")
-        self.assertEqual(2, ExportTicketsTask.objects.count())
+        self.assertEqual(2, Export.objects.count())
 
     def test_export_empty(self):
         self.login(self.admin)
@@ -754,8 +756,8 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertFormError(response, "form", None, "End date can't be before start date.")
 
         # check requesting export for last 90 days
-        with self.mockReadOnly(assert_models={Ticket, ContactURN}):
-            with self.assertNumQueries(33):
+        with self.mockReadOnly(assert_models={Ticket, ContactURN, ContactGroup, ContactField}):
+            with self.assertNumQueries(29):
                 export = self._request_export(start_date=today - timedelta(days=90), end_date=today)
 
         expected_headers = [
@@ -823,7 +825,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         )
 
         # check requesting export for last 7 days
-        with self.mockReadOnly(assert_models={Ticket, ContactURN}):
+        with self.mockReadOnly(assert_models={Ticket, ContactURN, ContactGroup, ContactField}):
             export = self._request_export(start_date=today - timedelta(days=7), end_date=today)
 
         self.assertExcelSheet(
@@ -857,7 +859,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         )
 
         # check requesting with contact fields and groups
-        with self.mockReadOnly(assert_models={Ticket, ContactURN}):
+        with self.mockReadOnly(assert_models={Ticket, ContactURN, ContactGroup, ContactField}):
             export = self._request_export(
                 start_date=today - timedelta(days=7), end_date=today, with_fields=(age, gender), with_groups=(testers,)
             )
@@ -899,7 +901,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         )
 
         with self.anonymous(self.org):
-            with self.mockReadOnly(assert_models={Ticket, ContactURN}):
+            with self.mockReadOnly(assert_models={Ticket, ContactURN, ContactGroup, ContactField}):
                 export = self._request_export(start_date=today - timedelta(days=90), end_date=today)
             self.assertExcelSheet(
                 export[0],
@@ -995,7 +997,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
                 "with_groups": [cf.id for cf in with_groups],
             },
         )
-        task = ExportTicketsTask.objects.all().order_by("-id").first()
+        task = Export.objects.all().order_by("-id").first()
         filename = f"{settings.MEDIA_ROOT}/test_orgs/{self.org.id}/ticket_exports/{task.uuid}.xlsx"
         workbook = load_workbook(filename=filename)
         return workbook.worksheets

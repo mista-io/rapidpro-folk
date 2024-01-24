@@ -25,11 +25,11 @@ from temba.classifiers.types.wit import WitType
 from temba.contacts.models import (
     URN,
     Contact,
+    ContactExport,
     ContactField,
     ContactGroup,
     ContactImport,
     ContactImportBatch,
-    ExportContactsTask,
 )
 from temba.flows.models import ExportFlowResultsTask, Flow, FlowLabel, FlowRun, FlowSession, FlowStart, FlowStartCount
 from temba.globals.models import Global
@@ -43,15 +43,15 @@ from temba.templates.models import TemplateTranslation
 from temba.tests import CRUDLTestMixin, ESMockWithScroll, TembaTest, matchers, mock_mailroom
 from temba.tests.base import get_contact_search
 from temba.tests.s3 import MockS3Client, jsonlgz_encode
-from temba.tickets.models import ExportTicketsTask
+from temba.tickets.models import TicketExport
 from temba.triggers.models import Trigger
 from temba.utils import json, languages
 from temba.utils.uuid import uuid4
 from temba.utils.views import TEMBA_MENU_SELECTION
 
 from .context_processors import RolePermsWrapper
-from .models import BackupToken, Invitation, Org, OrgImport, OrgMembership, OrgRole, User
-from .tasks import delete_released_orgs, resume_failed_tasks, send_user_verification_email
+from .models import BackupToken, Export, Invitation, Org, OrgImport, OrgMembership, OrgRole, User
+from .tasks import delete_released_orgs, restart_stalled_exports, send_user_verification_email
 
 
 class OrgRoleTest(TembaTest):
@@ -1807,11 +1807,11 @@ class OrgTest(TembaTest):
 
     @patch("temba.msgs.tasks.export_messages_task.delay")
     @patch("temba.flows.tasks.export_flow_results_task.delay")
-    @patch("temba.contacts.tasks.export_contacts_task.delay")
-    def test_resume_failed_task(
-        self, mock_export_contacts_task, mock_export_flow_results_task, mock_export_messages_task
+    @patch("temba.orgs.tasks.perform_export.delay")
+    def test_restart_stalled_exports(
+        self, mock_org_export_task, mock_export_flow_results_task, mock_export_messages_task
     ):
-        mock_export_contacts_task.return_value = None
+        mock_org_export_task.return_value = None
         mock_export_flow_results_task.return_value = None
         mock_export_messages_task.return_value = None
 
@@ -1831,23 +1831,23 @@ class OrgTest(TembaTest):
         )
         ExportFlowResultsTask.objects.create(org=self.org, created_by=self.admin, modified_by=self.admin)
 
-        ExportContactsTask.objects.create(
-            org=self.org, created_by=self.admin, modified_by=self.admin, status=ExportContactsTask.STATUS_FAILED
-        )
-        ExportContactsTask.objects.create(
-            org=self.org, created_by=self.admin, modified_by=self.admin, status=ExportContactsTask.STATUS_COMPLETE
-        )
-        ExportContactsTask.objects.create(org=self.org, created_by=self.admin, modified_by=self.admin)
+        export1 = ContactExport.create(org=self.org, user=self.admin)
+        export1.status = Export.STATUS_FAILED
+        export1.save(update_fields=("status",))
+        export2 = ContactExport.create(org=self.org, user=self.admin)
+        export2.status = Export.STATUS_COMPLETE
+        export2.save(update_fields=("status",))
+        ContactExport.create(org=self.org, user=self.admin)
 
         two_hours_ago = timezone.now() - timedelta(hours=2)
 
         ExportMessagesTask.objects.all().update(modified_on=two_hours_ago)
         ExportFlowResultsTask.objects.all().update(modified_on=two_hours_ago)
-        ExportContactsTask.objects.all().update(modified_on=two_hours_ago)
+        Export.objects.filter(export_type=ContactExport.slug).update(modified_on=two_hours_ago)
 
-        resume_failed_tasks()
+        restart_stalled_exports()
 
-        mock_export_contacts_task.assert_called_once()
+        mock_org_export_task.assert_called_once()
         mock_export_flow_results_task.assert_called_once()
         mock_export_messages_task.assert_called_once()
 
@@ -2097,7 +2097,7 @@ class OrgDeleteTest(TembaTest):
         )
         ExportFinishedNotificationType.create(results)
 
-        contacts = add(ExportContactsTask.create(org, user, group=groups[0]))
+        contacts = add(ContactExport.create(org, user, group=groups[0]))
         ExportFinishedNotificationType.create(contacts)
 
         messages = add(
@@ -2106,7 +2106,7 @@ class OrgDeleteTest(TembaTest):
         ExportFinishedNotificationType.create(messages)
 
         tickets = add(
-            ExportTicketsTask.create(
+            TicketExport.create(
                 org, user, start_date=date.today(), end_date=date.today(), with_groups=groups, with_fields=fields
             )
         )
@@ -4632,3 +4632,48 @@ class BackupTokenTest(TembaTest):
         self.assertEqual(10, len(new_admin_tokens))
         self.assertNotEqual([t.token for t in admin_tokens], [t.token for t in new_admin_tokens])
         self.assertEqual(10, self.admin.backup_tokens.count())
+
+
+class ExportCRUDLTest(TembaTest):
+    def test_download(self):
+        export = TicketExport.create(
+            self.org, self.admin, start_date=date.today() - timedelta(days=7), end_date=date.today(), with_fields=()
+        )
+        export.perform()
+
+        self.assertEqual(1, self.admin.notifications.filter(notification_type="export:finished", is_seen=False).count())
+
+        download_url = reverse("orgs.export_download", kwargs={"uuid": export.uuid})
+
+        self.assertEqual(f"/export/download/{export.uuid}/", download_url)
+        self.assertEqual(
+            (
+                f"/media/test_orgs/{self.org.id}/ticket_exports/{export.uuid}.xlsx",
+                f"tickets_{datetime.today().strftime(r'%Y%m%d')}.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ),
+            export.get_raw_access(),
+        )
+
+        response = self.client.get(download_url)
+        self.assertLoginRedirect(response)
+
+        # user who didn't create the export and access it...
+        self.login(self.editor)
+        response = self.client.get(download_url)
+        self.assertContains(response, download_url + "?raw=1")
+
+        # which doesn't affect admin's notification
+        self.assertEqual(1, self.admin.notifications.filter(notification_type="export:finished", is_seen=False).count())
+
+        # but them accessing it will
+        self.login(self.admin)
+        response = self.client.get(download_url)
+
+        self.assertEqual(0, self.admin.notifications.filter(notification_type="export:finished", is_seen=False).count())
+
+        response = self.client.get(download_url + "?raw=1")
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", response.headers["content-type"]
+        )

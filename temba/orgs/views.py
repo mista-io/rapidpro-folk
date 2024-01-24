@@ -41,8 +41,6 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.functional import cached_property
-from django.templatetags.static import static
-
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
@@ -51,8 +49,9 @@ from temba.api.models import APIToken, Resthook
 from temba.campaigns.models import Campaign
 from temba.flows.models import Flow
 from temba.formax import FormaxMixin
+from temba.notifications.mixins import NotificationTargetMixin
 from temba.orgs.tasks import send_user_verification_email
-from temba.utils import analytics, get_anonymous_user, json, languages
+from temba.utils import analytics, get_anonymous_user, json, languages, str_to_bool
 from temba.utils.email import is_valid_address
 from temba.utils.fields import ArbitraryJsonChoiceField, CheckboxWidget, InputWidget, SelectMultipleWidget, SelectWidget
 from temba.utils.timezones import TimeZoneFormField
@@ -67,7 +66,7 @@ from temba.utils.views import (
     StaffOnlyMixin,
 )
 
-from .models import BackupToken, IntegrationType, Invitation, Org, OrgImport, OrgRole, User, UserSettings
+from .models import BackupToken, Export, IntegrationType, Invitation, Org, OrgImport, OrgRole, User, UserSettings
 
 # session key for storing a two-factor enabled user's id once we've checked their password
 TWO_FACTOR_USER_SESSION_KEY = "_two_factor_user_id"
@@ -1182,14 +1181,12 @@ class MenuMixin(OrgPermsMixin):
             menu_item["bubble"] = bubble
 
         if icon:
-            menu_item["icon"] = icon 
-        
+            menu_item["icon"] = icon
 
         if count is not None:
             menu_item["count"] = count
 
         if endpoint:
-            print(endpoint)
             if endpoint[0] == "/":  # pragma: no cover
                 menu_item["endpoint"] = endpoint
             elif perm or self.has_org_perm(endpoint):
@@ -1480,8 +1477,6 @@ class OrgCRUDL(SmartCRUDL):
                     href="flows.flow_list",
                     perm="flows.flow_list",
                 ),
-            
-
                 self.create_menu_item(
                     menu_id="trigger",
                     name=_("Triggers"),
@@ -1505,19 +1500,6 @@ class OrgCRUDL(SmartCRUDL):
                     endpoint="tickets.ticket_menu",
                     href="tickets.ticket_list",
                 ),
-                 #ussd menu
-
-                self.create_menu_item(
-                    menu_id="ussd",
-                    name=_("USSD"),
-                    icon='zap',
-                    endpoint="tickets.ticket_menu",
-                    href="ussd.ussd_menu",
-                    #perm="ussd.ussd_menu",
-                  
-                ),
-
-
             ]
 
             if org:
@@ -3016,35 +2998,21 @@ class OrgCRUDL(SmartCRUDL):
             def lang_json(code):
                 return {"value": code, "name": languages.get_name(code)}
 
-            if org.flow_languages:
-                primary_lang_code = org.flow_languages[0]
-                initial["primary_lang"] = [lang_json(primary_lang_code)]
-            else:
-                # Handle the case where org.flow_languages is an empty list
-                initial["primary_lang"] = []
-
             non_primary_langs = org.flow_languages[1:] if len(org.flow_languages) > 1 else []
             initial["other_langs"] = [lang_json(ln) for ln in non_primary_langs]
-
-        
+            initial["primary_lang"] = [lang_json(org.flow_languages[0])]
             return initial
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
             org = self.get_object()
 
-            primary_lang = None
-            other_langs = []
-
-            if org.flow_languages:
-                primary_lang = languages.get_name(org.flow_languages[0])
-                other_langs = sorted([languages.get_name(code) for code in org.flow_languages[1:]])
+            primary_lang = languages.get_name(org.flow_languages[0])
+            other_langs = sorted([languages.get_name(code) for code in org.flow_languages[1:]])
 
             context["primary_lang"] = primary_lang
             context["other_langs"] = other_langs
-
             return context
-
 
         def get(self, request, *args, **kwargs):
             if self.request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest":
@@ -3142,3 +3110,33 @@ class OrgImportCRUDL(SmartCRUDL):
 
         def derive_title(self):
             return _("Import Flows and Campaigns")
+
+
+class ExportCRUDL(SmartCRUDL):
+    model = Export
+    actions = ("download",)
+
+    class Download(SpaMixin, NotificationTargetMixin, OrgObjPermsMixin, SmartReadView):
+        slug_url_kwarg = "uuid"
+        menu_path = "/settings/workspace"
+        title = _("Download Export")
+
+        def get(self, request, *args, **kwargs):
+            if str_to_bool(request.GET.get("raw", 0)):
+                export = self.get_object()
+
+                url, filename, mime_type = export.get_raw_access()
+
+                if url.startswith("http"):  # pragma: needs cover
+                    response = HttpResponseRedirect(url)
+                else:
+                    asset_file = open("." + url, "rb")
+                    response = HttpResponse(asset_file, content_type=mime_type)
+                    response["Content-Disposition"] = "attachment; filename=%s" % filename
+
+                return response
+
+            return super().get(request, *args, **kwargs)
+
+        def get_notification_scope(self) -> tuple[str, str]:
+            return "export:finished", self.get_object().get_notification_scope()
