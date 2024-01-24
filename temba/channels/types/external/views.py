@@ -73,6 +73,8 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         url = ExternalURLField(
             max_length=1024,
             label=_("Send URL"),
+            #https://staging.flowartisan.com/ussd/api/send-url
+            initial="https://staging.flowartisan.com/ussd/api/send-url",
             help_text=_("The URL we will call when sending messages, with variable substitutions"),
         )
 
