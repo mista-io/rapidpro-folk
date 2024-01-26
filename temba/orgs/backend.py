@@ -34,7 +34,7 @@ class AuthenticationBackend(ModelBackend):
             return "%s?start" % reverse("public.public_welcome")
 
     def pre_process(self, request, *args, **kwargs):
-        # if our brand doesn't allow signups, then redirect to the homepage
+        # if our brand doesn't allow signups, then redirect to the homepage instead
         if "signups" not in request.branding.get("features", []):  # pragma: needs cover
             return HttpResponseRedirect(reverse("public.public_index"))
 
