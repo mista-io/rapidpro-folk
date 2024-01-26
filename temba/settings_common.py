@@ -77,6 +77,13 @@ STORAGE_ROOT_DIR = "test_orgs" if TESTING else "orgs"
 AWS_ACCESS_KEY_ID = "aws_access_key_id"
 AWS_SECRET_ACCESS_KEY = "aws_secret_access_key"
 
+
+#Authentication sevice token
+
+MISTA_JWT_SECRET="Iz3IJVquJJYGQJ2sWnSPEB3e7PsZIHRrDUTehoIFDeebgqF8d73wJxxiVa2wPgbE"
+MISTA_ADMIN_TOKEN="Bearer 62|Gyb36StR9VJbxa4VCzYjiwqGpWoCNbcAQl166Ugt"
+
+
 # -----------------------------------------------------------------------------------
 # Localization
 # -----------------------------------------------------------------------------------

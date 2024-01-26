@@ -18,10 +18,14 @@ from .views import (
     WelcomeRedirect,
 )
 
+from temba.orgs.views import LoginView
 sitemaps = {"public": PublicViewSitemap, "video": VideoSitemap}
 
 urlpatterns = [
-    re_path(r"^$", IndexView.as_view(), {}, "public.public_index"),
+   # re_path(r"^$", IndexView.as_view(), {}, "public.public_index"),
+    #make login page as the default page
+    re_path(r"^$", LoginView.as_view(), {}, "users.login"),
+
     re_path(r"^sitemap\.xml$", sitemap, {"sitemaps": sitemaps}, name="public.sitemaps"),
     re_path(r"^welcome/$", Welcome.as_view(), {}, "public.public_welcome"),
     re_path(r"^android/$", Android.as_view(), {}, "public.public_android"),

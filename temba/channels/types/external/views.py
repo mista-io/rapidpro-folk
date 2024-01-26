@@ -23,7 +23,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             min_length=1,
             label=_("Number"),
             required=False,
-            help_text=_("The phone number or that this channel will send from"),
+            help_text=_("The phone number or  Shortcode that this channel will send from"),
         )
 
         address = forms.CharField(

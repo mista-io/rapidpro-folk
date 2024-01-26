@@ -2749,11 +2749,12 @@ class OrgCRUDL(SmartCRUDL):
                 language=settings.DEFAULT_LANGUAGE,
             )
 
+
             self.object = Org.create(new_user, self.form.cleaned_data["name"], self.form.cleaned_data["timezone"])
 
             analytics.identify(new_user, brand=self.request.branding, org=obj)
             analytics.track(new_user, "temba.org_signup", properties=dict(org=self.object.name))
-
+            # print(self.object)
             switch_to_org(self.request, obj)
             login(self.request, new_user)
             return obj

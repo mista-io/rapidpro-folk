@@ -45,6 +45,7 @@ from temba.utils.text import generate_secret, generate_token
 from temba.utils.timezones import timezone_to_country_code
 from temba.utils.uuid import uuid4
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -1123,6 +1124,7 @@ class Org(SmartModel):
             samples = example_file.read()
 
         user = self.get_admins().first()
+        #print("######################user",user.username)
         if user:
             # some some substitutions
             samples = samples.replace("{{EMAIL}}", user.username).replace("{{API_URL}}", api_url)
@@ -1135,6 +1137,8 @@ class Org(SmartModel):
                     exc_info=True,
                     extra=dict(definition=json.loads(samples)),
                 )
+                print(str(e))
+
 
     def generate_dependency_graph(self, include_campaigns=True, include_triggers=False, include_archived=False):
         """
@@ -1238,6 +1242,7 @@ class Org(SmartModel):
         """
         from temba.contacts.models import ContactField, ContactGroup
         from temba.tickets.models import Topic
+     
 
         with transaction.atomic():
             ContactGroup.create_system_groups(self)
@@ -1246,7 +1251,10 @@ class Org(SmartModel):
 
         # outside of the transaction as it's going to call out to mailroom for flow validation
         if sample_flows:
+            
             self.create_sample_flows(f"https://{self.get_brand_domain()}")
+
+            print("Finished creating sample flows")
 
     def get_delete_date(self, *, archive_type=Archive.TYPE_MSG):
         """
