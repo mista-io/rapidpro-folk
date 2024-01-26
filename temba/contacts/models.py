@@ -1662,7 +1662,7 @@ class ContactGroup(LegacyUUIDMixin, TembaModel, DependencyMixin):
 
     def update_query(self, query, reevaluate=True, parsed=None):
         """
-        Updates the query for a smart group
+        Updates the query for a smart group --
         """
 
         assert self.group_type == self.TYPE_SMART, "can only update queries on smart groups"
