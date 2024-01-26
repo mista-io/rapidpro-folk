@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 class AuthenticationBackend(ModelBackend):
     def get_success_url(self):
+            # i will implement this later
             return "%s?start" % reverse("public.public_welcome")
 
     def pre_process(self, request, *args, **kwargs):
