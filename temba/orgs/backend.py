@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 class AuthenticationBackend(ModelBackend):
     def get_success_url(self):
-            # i will implement this later
+            #i will implement this later
             return "%s?start" % reverse("public.public_welcome")
 
     def pre_process(self, request, *args, **kwargs):
@@ -131,7 +131,7 @@ def decode_jwt_token(token: str):
 
     try:
         payload = jwt.decode(stripped_bearer_token, secret, algorithms=['HS256'])
-        #print(f"check this###########{payload}", payload)
+        print(f"check this########### nu{payload}", payload)
         return payload
     except jwt.exceptions.InvalidTokenError:
         return None  # Return None instead of raising an exception for invalid credentials
