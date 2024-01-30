@@ -58,10 +58,16 @@ SESSION_STATUS_CHOICES = (
 
 class Handler(SmartModel):
     uuid = models.UUIDField(unique=True, default=uuid4)
+    AGGREGATOR_CHOICES = [
+        ('MISTA', _('MISTA')),
+        ('AFRICAS_TALKING', _("Africa's Talking")),
+    ]
+
     aggregator = models.CharField(
-        max_length=150,
+        max_length=20,
+        choices=AGGREGATOR_CHOICES,
+        default='MISTA',
         verbose_name=_("Aggregator"),
-        default="MISTA",
         help_text=_("Your USSD aggregator"),
     )
 

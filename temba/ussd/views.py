@@ -17,6 +17,14 @@ from ..orgs.views import OrgPermsMixin, ModalMixin, MenuMixin
 
 from ..utils.views import SpaMixin, ContentMenuMixin
 from django.http import HttpResponse
+from django.http import JsonResponse
+from .models import STARTS_WITH, ENDS_WITH, IS_IN_RESPONSE_BODY, IS_IN_HEADER_XML_JSON, IS_IN_HEADER_PLAIN_TEXT
+
+STARTS_WITH = 1
+ENDS_WITH = 2
+IS_IN_RESPONSE_BODY = 3
+IS_IN_HEADER_XML_JSON = 4
+IS_IN_HEADER_PLAIN_TEXT = 5
 
 
 class HandlerCRUDL(SmartCRUDL):
@@ -121,4 +129,45 @@ def hello(Request):
     a=10
     return HttpResponse("Hello, world. You're at the polls index.")
     
-    
+def get_default_request_structure(request):
+    aggregator = request.GET.get('aggregator', '')
+
+    # Define the available choices for "Menu Type Flag Mode"
+    SIGNAL_CHOICES = [
+        (STARTS_WITH, _("Starts With (Plain Text)")),
+        (ENDS_WITH, _("Ends With (Plain Text)")),
+        (IS_IN_RESPONSE_BODY, _("Is In Response (XML/JSON)")),
+        (IS_IN_HEADER_XML_JSON, _("Is in Headers (XML/JSON)")),
+        (IS_IN_HEADER_PLAIN_TEXT, _("Is in Headers (Plain Text)")),
+    ]
+
+    aggregator_to_allowed_modes = {
+        'MISTA': [IS_IN_RESPONSE_BODY],
+        'AFRICAS_TALKING': [STARTS_WITH],
+    }
+
+    allowed_modes = aggregator_to_allowed_modes.get(aggregator, [])
+    # Filter the SIGNAL_CHOICES based on allowed modes
+    filtered_choices = [(key, label) for key, label in SIGNAL_CHOICES if key in allowed_modes]
+    print("#################",filtered_choices)
+    # Implement your logic to fetch the default structures based on the aggregator
+    aggregator_to_default_structure = {
+        'MISTA': {
+            'default_request_structure': '{{short_code=serviceCode}},  {{session_id=sessionId}}, {{from=msisdn}}, {{text=UserInput}}',
+            'default_response_structure': '{{text=message}}, {{action=ContinueSession}}',
+
+        },
+        'AFRICAS_TALKING': {
+            'default_request_structure': '{{short_code=serviceCode}},  {{session_id=sessionId}}, {{from=phoneNumber}}, {{text=text}}',
+            'default_response_structure': '{{text=responseString}},  {{action=continueSession}}',
+        },
+    }
+
+    default_structures = aggregator_to_default_structure.get(aggregator, {})
+    response_data = {
+        'signal_choices': filtered_choices,
+        'default_structures': default_structures,
+    }
+    print(response_data)
+
+    return JsonResponse(response_data)  

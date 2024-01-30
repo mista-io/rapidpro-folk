@@ -2,7 +2,6 @@
 -load smartmin i18n
 
 -block fields
-
   .flex.flex-col
     -render_field 'channel'
   .flex.space-x-4
@@ -30,24 +29,7 @@
   .flex.flex-col
     -render_field 'response_structure'
 
-
-
 -block modal-script
-  {{block.super}}
+  {{ block.super }}
 
-  :javascript
-
-    var modalBody = document.querySelector("#create-handler-modal").shadowRoot;
-    var typeSelect = modalBody.querySelector("mondo-select[name='flow_type']");
-    var keywords = modalBody.querySelector(".keywords");
-    var keywordsSelect = modalBody.querySelector("mondo-select[name='keyword_triggers']");
-    
-    typeSelect.addEventListener("change", function(evt) {
-        var selected = evt.target.values[0];
-        if (selected.value === "B" || selected.value === "S") {
-          keywords.classList.add("hidden");
-          keywordsSelect.clear();
-        } else {
-          keywords.classList.remove("hidden");
-        }
-    });
+  

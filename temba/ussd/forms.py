@@ -28,18 +28,19 @@ class HandlerForm(forms.ModelForm):
         self.fields['request_structure'].initial = CONFIG_DEFAULT_REQUEST_STRUCTURE
         self.fields['response_structure'].initial = CONFIG_DEFAULT_RESPONSE_STRUCTURE
 
+    
     class Meta:
         model = Handler
         exclude = ["is_active", "uuid"]
         widgets = {"short_code": InputWidget(),
-                   "aggregator": InputWidget(),
+                   "aggregator": SelectWidget(attrs={'onchange': 'updateStructures()', 'class': 'selected'}),
                    "channel": SelectWidget(),
                    "request_structure": CompletionTextarea(),
                    "response_structure": CompletionTextarea(),
-                   "signal_exit_or_reply_mode": SelectWidget(),
-                   "signal_menu_type_strings": InputWidget(),
-                   "signal_header_key": InputWidget(),
+                   "signal_exit_or_reply_mode": InputWidget(attrs={'style': 'display: none;'}),
+                   "signal_menu_type_strings": InputWidget(attrs={'style': 'display: none;'}),
+                   "signal_header_key": InputWidget(attrs={'style': 'display: none;'}),
                    "trigger_word": InputWidget(),
                    "enable_repeat_current_step": CheckboxWidget(),
-                   "auth_scheme": SelectWidget(),
+                   "auth_scheme": SelectWidget(attrs={'style': 'display: none;'}),
                    }

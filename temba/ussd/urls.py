@@ -24,4 +24,6 @@ urlpatterns = [
     path('ussd/handlers/read/<int:pk>/', HandlerCRUDL.Read.as_view(), name='ussd.handler_read'),
     path('ussd/handlers/update/<int:pk>/', HandlerCRUDL.Update.as_view(), name='ussd.handler_update'),
     path('hello/', hello, name='hello'),  # Example path for the hello view
+    path('get_default_request_structure/', get_default_request_structure, name='get_default_request_structure'),
+
 ]            

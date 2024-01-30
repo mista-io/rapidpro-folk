@@ -11,6 +11,9 @@
           {{ title }}
         {% else %}
           {{ branding.name }}
+
+        
+          
         {% endif %}
       {% endblock head-title %}
     </title>
@@ -65,6 +68,128 @@
         }
       });
     </script>
+    <script>
+      function updateDropdownOptions(selectedAggregator, signalChoices) {
+        console.log('Updating dropdown options...');
+        console.log('Signal choices length:', signalChoices.length);
+        
+        var menuTypeFlagModeInput = document.getElementById('id_signal_exit_or_reply_mode');
+            
+        // Check if menuTypeFlagModeInput is a valid element
+        if (menuTypeFlagModeInput) {
+          // Get the current selected value
+          var currentValue = menuTypeFlagModeInput.value;
+      
+          console.log('Selected Aggregator in Input:', selectedAggregator);
+      
+          // Clear existing options (if any)
+          menuTypeFlagModeInput.value = '';
+      
+          signalChoices.forEach(choice => {
+            var [value, label] = choice;
+            
+            // Adjust conditions based on integer values
+            if (
+              (selectedAggregator === 'MISTA' && value === 3) ||
+              (selectedAggregator === 'AFRICAS_TALKING' && value === 1)
+              // Add more conditions as needed for other aggregators and values
+            ) {
+              // Append the label and value to the input field
+              menuTypeFlagModeInput.value =  value;
+              menuTypeFlagModeDropdown.setAttribute('style', 'display: none;');
+
+              console.log('Adding option for selectedAggregator:', selectedAggregator);
+              console.log('Setting label:', label, 'and value:', value);
+            }
+          });
+      
+          // Set the selected value after adding all options
+          console.log('Updated input value:', menuTypeFlagModeInput.value);
+        } else {
+          console.error('Invalid menuTypeFlagModeInput:', menuTypeFlagModeInput);
+        }
+      }
+      
+      // Call the updateDropdownOptions function with the appropriate data
+      document.addEventListener('DOMContentLoaded', function () {
+        var selectedAggregator = 'MISTA'; // Replace with the default aggregator
+      
+        var signalChoices = [
+          [1, 'Starts With (Plain Text)'],
+          [2, 'Ends With (Plain Text)'],
+          [3, 'Is In Response (XML/JSON)'],
+          [4, 'Is in Headers (XML/JSON)'],
+          [5, 'Is in Headers (Plain Text)']
+      
+          // Add more choices as needed
+        ];
+      
+        updateDropdownOptions(selectedAggregator, signalChoices);
+      });
+      
+      
+      
+      // Function to update request, response, and menu type flag structure based on the selected aggregator
+      async function updateStructures() {
+        var aggregatorDropdown = document.getElementById('id_aggregator');
+        var requestStructureField = document.getElementById('id_request_structure');
+        var responseStructureField = document.getElementById('id_response_structure');
+        var menuTypeField = document.getElementById('id_signal_menu_type_strings');
+        console.log("####################"+menuTypeField)
+      
+        // Check if the aggregator dropdown and fields are found
+        if (aggregatorDropdown && requestStructureField && responseStructureField && menuTypeField) {
+          var selectedAggregator = aggregatorDropdown.value;
+      
+          // Make an asynchronous request to fetch the default structures for the selected aggregator
+          try {
+            const response = await fetch(`/get_default_request_structure/?aggregator=${selectedAggregator}`);
+            const data = await response.json();
+            console.log('Fetched data:', data);
+      
+            // Update the request_structure and response_structure fields with the fetched data
+            requestStructureField.value = data.default_structures.default_request_structure || '';
+            responseStructureField.value = data.default_structures.default_response_structure || '';
+      
+            // Update the menu type flag structure based on the selected aggregator
+            if (selectedAggregator === 'MISTA') {
+              menuTypeField.value = '0,1';  // Your custom value for MISTA
+            } else if (selectedAggregator === 'AFRICAS_TALKING') {
+              menuTypeField.value = 'END,CON';  // Your custom value for Africa's Talking
+            } else {
+              menuTypeField.value = '';  // Default value or fallback
+            }
+      
+            // Check if signal_choices is defined and not empty
+            if (data.signal_choices ) {
+              
+              // Update the menu type flag structure based on the selected aggregator
+              updateDropdownOptions(selectedAggregator, data.signal_choices);
+            } else {
+              console.error('No signal choices found.');
+            }
+          } catch (error) {
+            console.error('Error fetching default structures:', error);
+            // Handle error if necessary
+          }
+        }
+      }
+      
+      // Add the change event listener to the aggregator dropdown if it exists
+      document.addEventListener('DOMContentLoaded', function () {
+        var aggregatorDropdown = document.getElementById('id_aggregator');
+        if (aggregatorDropdown) {
+          aggregatorDropdown.addEventListener("change", updateStructures);
+      
+          // Call the updateStructures function initially to set the initial values
+          updateStructures();
+        }
+      });
+      </script>
+      
+      
+
+
     {% block scripts %}
       {% compress js %}
         <script src="{{ STATIC_URL }}js/temba.js"></script>
