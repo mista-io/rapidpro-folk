@@ -39,7 +39,7 @@ class HandlerForm(forms.ModelForm):
                    "response_structure": CompletionTextarea(),
                    "signal_exit_or_reply_mode": InputWidget(attrs={'style': 'display: none;'}),
                    "signal_menu_type_strings": InputWidget(attrs={'style': 'display: none;'}),
-                   "signal_header_key": InputWidget(attrs={'style': 'display: none;'}),
+                   "signal_header_key": InputWidget(),
                    "trigger_word": InputWidget(),
                    "enable_repeat_current_step": CheckboxWidget(),
                    "auth_scheme": SelectWidget(attrs={'style': 'display: none;'}),
