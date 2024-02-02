@@ -125,6 +125,7 @@ class USSDCallBack(APIView):
         try:
             receive_url = get_receive_url(channel)
             req = requests.post(receive_url, flow_request_body, headers=HEADERS, timeout=10)
+            ussd_logger.info(req.content)
             if req.status_code in [status.HTTP_200_OK, status.HTTP_201_CREATED]:
                 # increment key1
                 r.incr(key1)
@@ -185,9 +186,11 @@ class USSDCallBack(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
     def post(self, request):
+        ussd_logger.info(f"REQUEST LOG HEADERS:  {request.META}")
         return self.construct_response()
 
     def get(self, request):
+        ussd_logger.info(f"REQUEST LOG HEADERS:  {request.META}")
         return self.construct_response()
 
 
