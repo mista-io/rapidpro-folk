@@ -18,6 +18,9 @@ from ..orgs.views import OrgPermsMixin, ModalMixin, MenuMixin
 from ..utils.views import SpaMixin, ContentMenuMixin
 from django.http import HttpResponse
 from django.http import JsonResponse
+from temba.orgs.models import Org,User
+
+
 from .models import STARTS_WITH, ENDS_WITH, IS_IN_RESPONSE_BODY, IS_IN_HEADER_XML_JSON, IS_IN_HEADER_PLAIN_TEXT
 
 STARTS_WITH = 1
@@ -125,9 +128,13 @@ class HandlerCRUDL(SmartCRUDL):
     #         handler.save()
     #         return HttpResponse("Handler deleted successfully")  # Adjust response as need
 
-def hello(Request):
-    a=10
-    return HttpResponse("Hello, world. You're at the polls index.")
+def hello(self):
+    # session = self.get_object()
+
+    # session_id=session.id,
+    # org=session.org.name,
+    # org_id=session.org_id,
+    return HttpResponse("org_id")
     
 def get_default_request_structure(request):
     aggregator = request.GET.get('aggregator', '')

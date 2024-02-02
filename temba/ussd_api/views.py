@@ -73,6 +73,7 @@ class USSDCallBack(APIView):
         self.request_factory = ProcessAggregatorRequest(request_data)
         self.standard_request_string = self.request_factory.process_handler()
         auth_scheme = self.request_factory.get_auth_scheme
+        ussd_logger.info(request.META)
 
         # we shall support NONE, TOKEN and BASIC
         if auth_scheme == NONE:
