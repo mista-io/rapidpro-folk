@@ -19,7 +19,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 
 from temba.ussd.models import NONE, TOKEN, JWT, COMPLETED, TIMED_OUT, USSDContact
-from temba.ussd.renderers import PlainTextRenderer, CustomXMLRenderer
+from temba.ussd.renderers import PlainTextRenderer, CustomXMLRenderer, CustomPlainTextRenderer
 from rest_framework_xml.renderers import XMLRenderer
 
 from temba.ussd.utils import ussd_logger, ProcessAggregatorRequest, standard_urn, FLOW_WAITING_FLAG, \
@@ -55,7 +55,7 @@ class USSDCallBack(APIView):
     request = None
     request_factory = None
     standard_request_string = None
-    renderer_classes = (JSONRenderer, PlainTextRenderer, XMLRenderer, CustomXMLRenderer)
+    renderer_classes = (JSONRenderer, PlainTextRenderer, XMLRenderer, CustomXMLRenderer, CustomPlainTextRenderer)
 
     def perform_authentication(self, request):
         # overriding perform_authentication method from APIView
