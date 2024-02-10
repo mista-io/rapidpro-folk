@@ -14,6 +14,7 @@ import redis
 from jwt.exceptions import InvalidTokenError
 from django.shortcuts import render, redirect
 from temba.orgs.views import switch_to_org
+from temba.orgs.models import Org
 from temba.utils import analytics, get_anonymous_user, json, languages, str_to_bool
 from django.contrib.auth.views import LoginView as AuthLoginView
 from smartmin.users.views import Login, UserUpdateForm
@@ -46,6 +47,8 @@ class AuthenticationBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
             url = "https://api.mista.io/sms/auth/authy"
+            # url = "http://localhost:8001/sms/auth/authy"
+
             data = {"email": username, "password": password}
             headers = {"Authorization": "Bearer " + settings.MISTA_ADMIN_TOKEN}
             response = requests.post(url, headers=headers, json=data)
@@ -56,6 +59,8 @@ class AuthenticationBackend(ModelBackend):
 
                 if access_token:
                     payload = decode_jwt_token(access_token)
+                    check_and_update_subscription_status(payload)
+
 
                     if payload is None:
                         return None  # Authentication failed, return None instead of raising an exception
@@ -131,7 +136,7 @@ def decode_jwt_token(token: str):
 
     try:
         payload = jwt.decode(stripped_bearer_token, secret, algorithms=['HS256'])
-        print(f"check this########### nu{payload}", payload)
+        print(payload)
         return payload
     except jwt.exceptions.InvalidTokenError:
         return None  # Return None instead of raising an exception for invalid credentials
@@ -156,3 +161,20 @@ def strip_bearer_token(token):
     else:
         return token
 
+def check_and_update_subscription_status(payload):
+    org=User.objects.get(username=payload['account']['email']).orgs.first()
+    print(org)
+    if payload is None:
+        return None
+    else:
+        status=payload['account']['subscription']['status']
+        print(status)
+        if status == "active":
+            org.unsuspend()
+        else:
+            #org suspend
+            org.suspend()
+
+            return False
+    pass
+     

@@ -1,7 +1,8 @@
 {% load i18n %}
 
-<temba-alert level="warning" class="mb-3">
+<temba-alert level="temba-alert temba-error" class="mb-3">
   {% blocktrans trimmed %}
-    Your workspace is suspended and no longer processing messages.
+     <!-- billing page = https://dashboard.mista.io/subscriptions -->
+    Your workspace is suspended and no longer processing messages. Please contact support or visit the <a href="https://dashboard.mista.io/subscriptions#subscriptions">billing page</a> to renew your subscription.
   {% endblocktrans %}
 </temba-alert>
