@@ -46,8 +46,8 @@ class AuthenticationBackend(ModelBackend):
 
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
-            url = "https://api.mista.io/sms/auth/authy"
-            #url = "http://localhost:8001/sms/auth/authy"
+            #url = "https://api.mista.io/sms/auth/authy"
+            url = "http://localhost:8001/sms/auth/authy"
 
             data = {"email": username, "password": password}
             headers = {"Authorization": "Bearer " + settings.MISTA_ADMIN_TOKEN}

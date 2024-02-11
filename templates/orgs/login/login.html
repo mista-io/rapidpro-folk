@@ -1,49 +1,65 @@
-{% extends "orgs/login/login_base.html" %}
-{% load smartmin i18n temba %}
+{% load static %}
 
-{% block login-title %}
-  {% trans "Welcome Back" %}
-{% endblock login-title %}
-{% block login-content %}
-  {% analytics_hook 'login' %}
-  {% blocktrans trimmed %}
-    Please sign in with your email address and password.
-  {% endblocktrans %}
-  <form method="POST" id="login-form">
-    {% csrf_token %}
-    {% for field, errors in form.errors.items %}
-      {% if field == '__all__' %}
-        <temba-alert level="error" class="my-4">
-          {{ errors }}
-        </temba-alert>
-      {% endif %}
-    {% endfor %}
-    <div class="mt-4">
-      <input type="text"
-             name="username"
-             maxlength="254"
-             placeholder="{{ _("Email Address") |escapejs }}"
-             value="{% if form.username.value %}{{ form.username.value|escape }}{% endif %}"
-             class="input">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flowartisan:: Revolutionizing Flow Building Without Code</title>
+    <link type="text/css" rel="stylesheet" href="{% static 'css/custom_login.css' %}">
+    <style type="text/css">
+        input {
+            width: 100%;
+        }
+        .content-card {
+            width: 28em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-title">
+    <!-- Page title content -->
+    {% block page_title %}
+    {% endblock %}
+</div>
+
+<div class="login-box">
+    <div class="login-box-formbox">
+        <div class="login-box-signup">
+            Don't have an account? <a href="https://dashboard.mista.io/register">Sign Up</a>
+        </div>
+        <div class="login-box-login">
+            <h1>Welcome to Flow Artisan</h1>
+            <p>
+                Please sign in with your email address and password. If you already have an account on dashboard.mista.io, use your credentials to log in.
+            </p>
+            <form id="login-form" method="POST" action="/users/login/">
+                {% csrf_token %}
+                <div>
+                    <label for="email">E-Mail</label>
+                    <input type="text" name="username" maxlength="254" placeholder="Email Address" value="" class="input-email" />
+                </div>
+                <div>
+                    <label for="password">Password</label>
+                    <input type="password" name="password" placeholder="Password" class="input-password" />
+                </div>
+                <div>
+                    <input type="submit" value="Sign In" class="btn button-primary" />
+                    <a href="https://dashboard.mista.io/password/reset">Forgot Password?</a>
+                </div>
+            </form>
+        </div>
     </div>
-    {% if form.username.errors %}
-      <temba-alert level="error" class="mt-4">
-        {{ form.username.errors }}
-      </temba-alert>
-    {% endif %}
-    <div class="mt-4">
-      <input type="password" name="password" placeholder="{{ _("Password") |escapejs }}" class="input">
+    <div class="login-box-quotebox">
+        <div class="quote-container">
+            <div class="quote"> The Art of Simplicity</div>
+            <div class="quote-small">
+                "Welcome to our platform! With our flow, you can build any conversation flow with ease and fun. No coding skills required! Create engaging and interactive conversations effortlessly."
+            </div>
+        </div>
     </div>
-    {% if form.password.errors %}
-      <temba-alert level="error" class="mt-4">
-        {{ form.password.errors }}
-      </temba-alert>
-    {% endif %}
-    <div class="mt-2 text-right">
-      <a href="/user/forget/">Forgot your password?</a>
-    </div>
-    <div class="mt-6">
-      <input type="submit" value="{{ _("Sign In") }}" class="button-primary">
-    </div>
-  </form>
-{% endblock login-content %}
+</div>
+
+</body>
+</html>
