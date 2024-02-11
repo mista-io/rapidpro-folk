@@ -47,7 +47,7 @@ class AuthenticationBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
             url = "https://api.mista.io/sms/auth/authy"
-            # url = "http://localhost:8001/sms/auth/authy"
+            #url = "http://localhost:8001/sms/auth/authy"
 
             data = {"email": username, "password": password}
             headers = {"Authorization": "Bearer " + settings.MISTA_ADMIN_TOKEN}
@@ -57,13 +57,29 @@ class AuthenticationBackend(ModelBackend):
                 # Authentication was successful
                 access_token = response.json().get('access_token')
 
+
                 if access_token:
                     payload = decode_jwt_token(access_token)
                     check_and_update_subscription_status(payload)
+                   
+                    # Ensure that options is a dictionary before using .get()
+                    options = payload['account']['plan']['options']
+                   
+                    json_data = json.loads(options)
 
-
-                    if payload is None:
-                        return None  # Authentication failed, return None instead of raising an exception
+                   # get flowartisan_access from the options
+                    flowartisan_access = json_data.get('flowartisan_access')
+                    print(flowartisan_access)
+                   
+                   
+                    try:
+                        if payload is None or 'account' not in payload  or 'flowartisan_access' not in payload['account']['plan']['options'] or flowartisan_access == "no":
+                        # Your code here
+                            return None  # Authentication failed, return None instead of raising an exceptio
+                        
+                    except KeyError:
+                       print("Either 'account', 'plan', or 'options' key is missing in the payload")
+                    
 
                     email = payload['account']['email']
                     try:
