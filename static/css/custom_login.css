@@ -216,6 +216,12 @@ form > div .btn:hover, form > div .btn:focus {
   padding: 2em 0 0 6em;
   position: relative;
 }
+
+.error-message {
+  color: #ff0000; /* Red color for error messages */
+  font-size: 14px; /* Font size of error messages */
+  margin-top: 8px; /* Top margin to separate from other elements */
+}
 .quote-small::before {
   content: "";
   position: absolute;
