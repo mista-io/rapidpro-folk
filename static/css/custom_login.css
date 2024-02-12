@@ -222,6 +222,26 @@ form > div .btn:hover, form > div .btn:focus {
   font-size: 14px; /* Font size of error messages */
   margin-top: 8px; /* Top margin to separate from other elements */
 }
+.main-logo {
+  max-height: 50px;
+  margin: 0 auto; /* Center horizontally */
+  display: block;
+  position: absolute; /* Position absolutely within its container */
+  top: -204px; /* Position at the top */
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Adjust to perfectly center horizontally */
+}
+
+.main-logo img {
+  position: absolute; /* Position the image absolutely within the parent */
+  top: 0; /* Position at the top */
+  left: 50%; /* Move to the center horizontally */
+  transform: translateX(-50%); /* Adjust to perfectly center */
+}
+
+.flex-grow {
+  flex-grow: 1;
+}
 .quote-small::before {
   content: "";
   position: absolute;
