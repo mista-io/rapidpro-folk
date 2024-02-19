@@ -33,6 +33,8 @@ IS_IN_HEADER_PLAIN_TEXT = 5
 class HandlerCRUDL(SmartCRUDL):
     model = Handler
     path = "ussd/handlers"
+    permissions = True
+
     
     
 
@@ -50,7 +52,7 @@ class HandlerCRUDL(SmartCRUDL):
         success_message = ""
         success_url = "@ussd.handler_list"
         submit_button_name = _("Create Handler")
-        permission= "tickets.ticket_menu"
+        permission= "ussd.handler_create"
 
         def pre_save(self, obj):
             obj = super().pre_save(obj)
@@ -72,7 +74,7 @@ class HandlerCRUDL(SmartCRUDL):
         submit_button_name = _("Update Handler")
         model = Handler
         
-        permission= "tickets.ticket_menu"
+        permission= "ussd.handler_update"
 
         def get_form_kwargs(self):
             kwargs = super().get_form_kwargs()
@@ -107,8 +109,9 @@ class HandlerCRUDL(SmartCRUDL):
         search_fields = ['aggregator', 'short_code']
         title = _("Aggregator Handlers")
         bulk_actions = ("archive", "delete")
-        permission= "tickets.ticket_menu"
+        permission= "triggers.trigger_list"
         model = Handler
+
 
 
         def get_context_data(self, **kwargs):
@@ -116,7 +119,10 @@ class HandlerCRUDL(SmartCRUDL):
             context['org_has_handlers'] = context['paginator'].count > 0
             context['actions'] = ("disable", "enable")
             return context
-
+        
+        def derive_menu(self):
+            org = self.request.org
+            menu = []
         
     # class Delete(OrgPermsMixin, SmartDeleteView):  # Change SmartView to SmartDeleteView
     #     success_message = ""

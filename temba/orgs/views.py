@@ -1477,6 +1477,15 @@ class OrgCRUDL(SmartCRUDL):
                     href="flows.flow_list",
                     perm="flows.flow_list",
                 ),
+
+                self.create_menu_item(
+                    menu_id="ussd",
+                    name=_("USSD Handlers"),
+                    icon="phone-02",
+                    endpoint="ussd.handler_list",
+                    href="ussd.handler_list",
+                    perm="triggers.trigger_list",
+                ),
                 self.create_menu_item(
                     menu_id="trigger",
                     name=_("Triggers"),

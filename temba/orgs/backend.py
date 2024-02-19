@@ -178,19 +178,30 @@ def strip_bearer_token(token):
         return token
 
 def check_and_update_subscription_status(payload):
-    org=User.objects.get(username=payload['account']['email']).orgs.first()
-    print(org)
     if payload is None:
         return None
-    else:
-        status=payload['account']['subscription']['status']
-        print(status)
-        if status == "active":
-            org.unsuspend()
-        else:
-            #org suspend
-            org.suspend()
 
+    org_email = payload.get('account', {}).get('email')
+    if org_email:
+        try:
+            org = User.objects.get(username=org_email).orgs.first()
+        except User.DoesNotExist:
+            # Handle the case where the user doesn't exist
+            org = None
+        print(org)
+        
+        status = payload['account']['subscription']['status']
+        print(status)
+        if status == "active" and org:
+            org.unsuspend()
+            return True
+        elif org:
+            org.suspend()
             return False
-    pass
-     
+        else:
+            # Handle the case where org is None
+            return None
+    else:
+        # Handle the case where org email is not provided in payload
+        return None
+
