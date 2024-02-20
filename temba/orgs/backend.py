@@ -58,19 +58,32 @@ class AuthenticationBackend(ModelBackend):
                 access_token = response.json().get('access_token')
 
 
-                if access_token:
+            if access_token:
                     payload = decode_jwt_token(access_token)
-                    check_and_update_subscription_status(payload)
-                   
-                    # Ensure that options is a dictionary before using .get()
-                    options = payload['account']['plan']['options']
-                   
-                    json_data = json.loads(options)
-
-                   # get flowartisan_access from the options
-                    flowartisan_access = json_data.get('flowartisan_access')
-                    print(flowartisan_access)
-                   
+                    if payload:
+                        check_and_update_subscription_status(payload)
+                        
+                        account = payload.get('account')
+                        if account:
+                            plan = account.get('plan')
+                            if plan:
+                                options = plan.get('options')
+                                if options:
+                                    try:
+                                        json_data = json.loads(options)
+                                        flowartisan_access = json_data.get('flowartisan_access')
+                                        print(flowartisan_access)
+                                    except json.JSONDecodeError:
+                                        print("Error decoding JSON data in options.")
+                                else:
+                                    print("'options' not found in payload.")
+                            else:
+                                print("'plan' not found in payload.")
+                        else:
+                            print("'account' not found in payload.")
+                    else:
+                        print("Payload not found.")
+                    
                    
                     try:
                         if payload is None or 'account' not in payload  or 'flowartisan_access' not in payload['account']['plan']['options'] or flowartisan_access == "no":
