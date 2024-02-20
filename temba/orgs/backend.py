@@ -63,20 +63,26 @@ class AuthenticationBackend(ModelBackend):
                     if payload:
                        check_and_update_subscription_status(payload)
 
-                    
-                    account = payload.get('account')
-                    if account:
-                        plan = account.get('plan')
+                    try:
+                      account = payload.get('account')
+                    except KeyError:
+                        print("account key is missing in the payload")
+                    # Ensure that account is a dictionary before using .get()
+                        
+                   
 
                    
                     # Ensure that options is a dictionary before using .get()
-                    options = payload['account']['plan']['options']
-                   
-                    json_data = json.loads(options)
-
-                   # get flowartisan_access from the options
-                    flowartisan_access = json_data.get('flowartisan_access')
-                    print(flowartisan_access)
+                    if account and 'plan' in account and 'options' in account['plan']:
+                        options = account['plan']['options']
+                        if options:
+                            json_data = json.loads(options)
+                            flowartisan_access = json_data.get('flowartisan_access')
+                            print(flowartisan_access)
+                            if flowartisan_access == "no":
+                                return None
+                    else:
+                        return None
                    
                    
                     try:
