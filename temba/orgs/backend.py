@@ -26,7 +26,6 @@ from django.http import HttpResponseRedirect, HttpResponse
 
 
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -57,21 +56,23 @@ class AuthenticationBackend(ModelBackend):
                 # Authentication was successful
                 access_token = response.json().get('access_token')
 
+               
 
                 if access_token:
                     payload = decode_jwt_token(access_token)
+                    try:
+                        account = payload.get('account')
+                    except Exception as e:
+                        # Handle the error gracefully
+                        print("An error occurred while accessing the 'account' variable:", e)
+                        # Optionally, set 'account' to None or a default value
+                        account = None
+                   
+                
                     if payload:
                        check_and_update_subscription_status(payload)
 
-                    try:
-                      account = payload.get('account')
-                    except KeyError:
-                        print("account key is missing in the payload")
-                    # Ensure that account is a dictionary before using .get()
-                        
-                   
-
-                   
+                
                     # Ensure that options is a dictionary before using .get()
                     if account and 'plan' in account and 'options' in account['plan']:
                         options = account['plan']['options']
@@ -101,9 +102,20 @@ class AuthenticationBackend(ModelBackend):
                         # create account from API
                         logger.info("User does not exist, registering one")
 
+                        # All required fields are present
                         first_name = payload['account']['firstname']
                         last_name = payload['account']['lastname']
+
+
                         organization = payload['account']['organization']
+
+                        required_fields = [first_name, last_name, organization]
+                        missing_fields = [field for field in required_fields if not field]
+                        if  missing_fields:
+                            # Handle the case where one or more required fields are missing
+                            return  None
+                        # Proceed with registration
+                    
 
                         # Instead of creating user directly, use create_user to handle password hashing
                         user = User.objects.create_user(

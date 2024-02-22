@@ -186,6 +186,7 @@ class USSDCallBack(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
     def post(self, request):
+        print(request.data)
         ussd_logger.info(f"REQUEST LOG HEADERS:  {request.META}")
         return self.construct_response()
 
