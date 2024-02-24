@@ -180,7 +180,9 @@ class USSDCallBack(APIView):
                 if not response_data.pop("is_plain", None):
                     print("JSON")
                     response = Response(response_data, status=status.HTTP_200_OK)
-                    response[header_key] = header_value
+                    # response[header_key] = header_value
+                    response["Content-type"] = "text/plain"
+
                 else:
                     # plain text
                     print("PLAIN")
