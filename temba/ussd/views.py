@@ -52,7 +52,7 @@ class HandlerCRUDL(SmartCRUDL):
         success_message = ""
         success_url = "@ussd.handler_list"
         submit_button_name = _("Create Handler")
-        permission= "ussd.handler_create"
+        permission= "triggers.trigger_list"
 
         def pre_save(self, obj):
             obj = super().pre_save(obj)
@@ -74,7 +74,7 @@ class HandlerCRUDL(SmartCRUDL):
         submit_button_name = _("Update Handler")
         model = Handler
         
-        permission= "ussd.handler_update"
+        permission= "triggers.trigger_list"
 
         def get_form_kwargs(self):
             kwargs = super().get_form_kwargs()
