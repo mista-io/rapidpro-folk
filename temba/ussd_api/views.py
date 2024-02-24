@@ -185,7 +185,7 @@ class USSDCallBack(APIView):
                 else:
                     # plain text
                     print("#####PLAIN####")
-                    response = Response(response_data[STANDARD_TEXT], status=status.HTTP_200_OK)
+                    response = Response(response_data[STANDARD_TEXT], status=status.HTTP_200_OK, content_type='text/plain')
                     response[header_key] = header_value
 
                     print(response)
