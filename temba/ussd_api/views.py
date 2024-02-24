@@ -188,6 +188,8 @@ class USSDCallBack(APIView):
                     response = Response(response_data[STANDARD_TEXT], status=status.HTTP_200_OK)
                     response[header_key] = header_value
                     response.accepted_renderer = PlainTextRenderer()
+                    response.accepted_media_type = "text/plain"
+                    
 
                     print(response)
                     print(dict(response.items()))
