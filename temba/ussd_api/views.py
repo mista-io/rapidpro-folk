@@ -108,6 +108,7 @@ class USSDCallBack(APIView):
                 text = handler.trigger_word
         else:
             text = self.standard_request_string[STANDARD_TEXT].strip()
+            print("the text returned from flow **************",text)
         standard_contact = standard_urn(urn)
         flow_request_body = {
             "from": standard_contact,
