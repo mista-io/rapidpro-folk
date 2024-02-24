@@ -189,6 +189,8 @@ class USSDCallBack(APIView):
                     response[header_key] = header_value
 
                     print(response)
+                    print(dict(response.items()))
+
                 return response
         return Response(response_data, status=status.HTTP_200_OK)
 
