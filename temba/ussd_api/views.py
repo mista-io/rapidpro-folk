@@ -104,6 +104,8 @@ class USSDCallBack(APIView):
             # from their current step in the flow else send them a flow start trigger
             if handler.enable_repeat_current_step:
                 text = " " if still_in_flow else handler.trigger_word
+                print("the text returned from flow **************",text)
+
             else:
                 text = handler.trigger_word
         else:
