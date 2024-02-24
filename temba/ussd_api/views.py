@@ -170,23 +170,26 @@ class USSDCallBack(APIView):
 
     def construct_response(self):
         response_data = self.process_request()
+        print(response_data)
 
         if isinstance(response_data, dict):
             if response_data.pop("is_header", None):
                 header_key = response_data.pop("header_key", None)
                 header_value = response_data.pop("header_value", None)
+                print(header_key, header_value)
                 if not response_data.pop("is_plain", None):
+                    print("JSON")
                     response = Response(response_data, status=status.HTTP_200_OK)
                     response[header_key] = header_value
                 else:
                     # plain text
+                    print("PLAIN")
                     response = Response(response_data[STANDARD_TEXT], status=status.HTTP_200_OK)
                     response[header_key] = header_value
                 return response
         return Response(response_data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        print(request.data)
         ussd_logger.info(f"REQUEST LOG HEADERS:  {request.META}")
         return self.construct_response()
 
