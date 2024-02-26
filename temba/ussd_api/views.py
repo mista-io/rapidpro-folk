@@ -149,7 +149,7 @@ class USSDCallBack(APIView):
                     text = feedback['text']
                     flow_session_status = feedback['session_status']
                     ussd_logger.info(f"From redis key: {data}")
-                    print(f"From redis key: {data}")
+                    # print(f"From redis key: {data}")
 
                     if flow_session_status == FLOW_WAITING_FLAG:
                         action = reply_action
@@ -158,14 +158,14 @@ class USSDCallBack(APIView):
                         changeSessionStatus(ussd_session, COMPLETED, 'success')
                         action = end_action
                     flow_executor_response = dict(text=text, action=action)
-                    print(f"Flow executor response: {flow_executor_response}")
+                    # print(f"Flow executor response: {flow_executor_response}")
                 else:
                     # mark session timed out and give it a red badge
                     changeSessionStatus(ussd_session, TIMED_OUT, 'danger')
                     ussd_logger.error(f"Response timed out for redis key {key2}")
-                    print(f"Response timed out for redis key {key2}")
+                    # print(f"Response timed out for redis key {key2}")
                     flow_executor_response = dict(text="Response timed out", action=end_action)
-                    print(f"Flow executor response: {flow_executor_response}")
+                    # print(f"Flow executor response: {flow_executor_response}")
                     # let's just delete this contact
                     USSDContact.contacts.delete_contact_by_urn(standard_contact)
                     r.delete(key2)  # let's delete the key after use
@@ -173,7 +173,7 @@ class USSDCallBack(APIView):
                 changeSessionStatus(ussd_session, TIMED_OUT, 'danger')
                 flow_executor_response = dict(text="Oops,An Error Occurred", action=end_action)
                 USSDContact.contacts.delete_contact_by_urn(standard_contact)
-                ussd_logger.error(req.content)
+                # ussd_logger.error(req.content)
 
         except Exception as error:
             ussd_logger.exception(error)
@@ -185,10 +185,10 @@ class USSDCallBack(APIView):
 
     def construct_response(self):
         response_data = self.process_request()
-        print(response_data)
+        print("############resp----############",response_data)
 
 
-        if isinstance(response_data, dict):
+        if isinstance(response_data, dict) or isinstance(response_data, list) or isinstance(response_data, str):
             if response_data.pop("is_header", None):
                 header_key = response_data.pop("header_key", None)
                 header_value = response_data.pop("header_value", None)
