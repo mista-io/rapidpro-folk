@@ -213,7 +213,6 @@ class USSDCallBack(APIView):
                     is_plain = True
                     print(response)
                     print(dict(response.items()))
-                    return response
    
 
                 # if is_plain==True:
