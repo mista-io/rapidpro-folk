@@ -6,7 +6,7 @@ Email ekeeya@oddjobs.tech
 
 from ast import literal_eval
 
-import redis
+import redis, json
 import requests
 from django.conf import settings
 from django.http import QueryDict
@@ -182,7 +182,6 @@ class USSDCallBack(APIView):
         aggregator_response = self.request_factory.construct_expected_response(flow_executor_response)
 
         return aggregator_response
-
     def construct_response(self):
         response_data = self.process_request()
         print(response_data)
@@ -193,7 +192,8 @@ class USSDCallBack(APIView):
                 header_value = response_data.pop("header_value", None)
                 print(header_key, header_value)
                 
-                if not response_data.pop("is_plain", None):
+                is_plain = response_data.pop("is_plain", False)
+                if not is_plain:
                     print("JSON")
                     # Construct JSON response
                     response_body = json.dumps(response_data)
@@ -205,13 +205,18 @@ class USSDCallBack(APIView):
                 else:
                     # Construct plain text response
                     print("#####PLAIN####")
-                    response = HttpResponse(response_data[STANDARD_TEXT], status=status.HTTP_200_OK, content_type="text/plain")
+                    response = HttpResponse(response_data[STANDARD_TEXT], status=status.HTTP_200_OK)
                     response[header_key] = header_value
                     print(response)
                     print(dict(response.items()))
                     return response
-    # If not a dictionary, return plain text response
-        return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
+        # If not a dictionary or is_plain is True, return response with content type based on is_plain flag
+        if is_plain:
+            return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
+        else:
+            response_body = json.dumps({"data": response_data})
+            return HttpResponse(response_body, status=status.HTTP_200_OK, content_type="application/json")
+
     #Response(response_data, status=status.HTTP_200_OK)
 
     def post(self, request):
