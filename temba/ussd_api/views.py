@@ -217,11 +217,10 @@ class USSDCallBack(APIView):
                     return response
    
 
-        if is_plain==True:
-          return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
-        else:
-           
-         return Response(response_body, status=status.HTTP_200_OK)
+            if is_plain==True:
+              return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
+        
+        return Response(response_data, status=status.HTTP_200_OK)
     
     def post(self, request):
         ussd_logger.info(f"REQUEST LOG HEADERS:  {request.META}")
