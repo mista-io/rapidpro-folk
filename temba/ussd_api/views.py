@@ -205,7 +205,6 @@ class USSDCallBack(APIView):
                     print(response)
                     print(dict(response.items()))
                     print(is_plain)
-                    return response
                 else:
                     # Construct plain text response
                     print("#####PLAIN####")
@@ -217,8 +216,8 @@ class USSDCallBack(APIView):
                     return response
    
 
-            if is_plain==True:
-              return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
+                # if is_plain==True:
+                #    return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
         
         return Response(response_data, status=status.HTTP_200_OK)
     
