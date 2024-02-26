@@ -217,6 +217,8 @@ class USSDCallBack(APIView):
                     return response
     # If not a dictionary, return plain text response
         if  is_plain==False:
+            print("#####JSON####")
+            print(response_data)
             return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="application/json")
 
         elif is_plain==True:
