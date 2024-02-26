@@ -186,6 +186,8 @@ class USSDCallBack(APIView):
     def construct_response(self):
         response_data = self.process_request()
         print(response_data)
+        is_plain=False
+
 
         if isinstance(response_data, dict):
             if response_data.pop("is_header", None):
