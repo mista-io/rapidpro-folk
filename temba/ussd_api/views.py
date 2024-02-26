@@ -202,7 +202,6 @@ class USSDCallBack(APIView):
                     response[header_key] = header_value
                     print(response)
                     print(dict(response.items()))
-                    print(is_plain)
                 else:
                     # Construct plain text response
                     print("#####PLAIN####")
@@ -216,7 +215,7 @@ class USSDCallBack(APIView):
                 # if is_plain==True:
                 #    return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
         
-        return Response(response_data, status=status.HTTP_200_OK)
+        return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="application/json")
     
     def post(self, request):
         ussd_logger.info(f"REQUEST LOG HEADERS:  {request.META}")
