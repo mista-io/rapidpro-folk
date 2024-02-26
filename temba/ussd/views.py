@@ -156,7 +156,7 @@ def get_default_request_structure(request):
 
     aggregator_to_allowed_modes = {
         'MISTA': [IS_IN_RESPONSE_BODY],
-        'AFRICAS_TALKING': [IS_IN_HEADER_PLAIN_TEXT],
+        'AFRICAS_TALKING': [STARTS_WITH],
     }
 
     allowed_modes = aggregator_to_allowed_modes.get(aggregator, [])

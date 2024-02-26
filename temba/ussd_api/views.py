@@ -185,6 +185,7 @@ class USSDCallBack(APIView):
 
     def construct_response(self):
         response_data = self.process_request()
+        print(response_data)
 
         if isinstance(response_data, dict):
             if response_data.pop("is_header", None):
@@ -214,7 +215,8 @@ class USSDCallBack(APIView):
                     print(dict(response.items()))
 
                 return response
-        return Response(response_data, status=status.HTTP_200_OK)
+        return  HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
+    #Response(response_data, status=status.HTTP_200_OK)
 
     def post(self, request):
         ussd_logger.info(f"REQUEST LOG HEADERS:  {request.META}")
