@@ -186,7 +186,6 @@ class USSDCallBack(APIView):
     def construct_response(self):
         response_data = self.process_request()
         print(response_data)
-        is_plain=None
 
 
         if isinstance(response_data, dict):
@@ -197,7 +196,6 @@ class USSDCallBack(APIView):
                 
                 if not response_data.pop("is_plain", None):
                     print("JSON")
-                    is_plain = False
                     # Construct JSON response
                     response_body = json.dumps(response_data)
                     response = HttpResponse(response_body, status=status.HTTP_200_OK, content_type="application/json")
@@ -210,15 +208,14 @@ class USSDCallBack(APIView):
                     print("#####PLAIN####")
                     response = HttpResponse(response_data[STANDARD_TEXT], status=status.HTTP_200_OK, content_type="text/plain")
                     response[header_key] = header_value
-                    is_plain = True
                     print(response)
                     print(dict(response.items()))
+                    return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
    
 
                 # if is_plain==True:
                 #    return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
-        if  is_plain==True:
-            return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
+        
         return Response(response_data, status=status.HTTP_200_OK)
     
     def post(self, request):
