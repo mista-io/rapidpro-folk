@@ -204,11 +204,11 @@ class USSDCallBack(APIView):
                     return HttpResponse(response, status=status.HTTP_200_OK, content_type="application/json")  
                 else:
                     # Construct plain text response
-                    print("#####PLAIN####")
+                    print("#####----------------PLAIN------------------####")
                     response = HttpResponse(response_data[STANDARD_TEXT], status=status.HTTP_200_OK, content_type="text/plain")
                     response[header_key] = header_value
-                    print(response)
-                    print(dict(response.items()))
+                    # print(response)
+                    # print(dict(response.items()))
                     return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
    
 
