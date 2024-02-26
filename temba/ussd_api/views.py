@@ -6,7 +6,7 @@ Email ekeeya@oddjobs.tech
 
 from ast import literal_eval
 
-import redis,json
+import redis, json
 import requests
 from django.conf import settings
 from django.http import QueryDict
@@ -199,12 +199,8 @@ class USSDCallBack(APIView):
                     print("JSON")
                     is_plain = False
                     # Construct JSON response
-
-                    transformed_data = {
-                        "message": response_data.get("text", ""),
-                        "ContinueSession": response_data.get("action", "")
-                    }
-                    response = HttpResponse(transformed_data, status=status.HTTP_200_OK, content_type="application/json")
+                    response_body = json.dumps(response_data)
+                    response = HttpResponse(response_body, status=status.HTTP_200_OK, content_type="application/json")
                     response[header_key] = header_value
                     print(response)
                     print(dict(response.items()))
@@ -221,9 +217,7 @@ class USSDCallBack(APIView):
                     return response
     # If not a dictionary, return plain text response
         if is_plain==False:
-            response_body = json.dumps({"data": response_data})
-
-            return HttpResponse(response_body, status=status.HTTP_200_OK, content_type="application/json")
+            return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="application/json")
         else:
           return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
     #Response(response_data, status=status.HTTP_200_OK)
