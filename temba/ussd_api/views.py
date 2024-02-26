@@ -216,12 +216,12 @@ class USSDCallBack(APIView):
                     print(dict(response.items()))
                     return response
     # If not a dictionary, return plain text response
-        if is_plain==False:
-            return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="application/json")
+        if not response_data.pop("is_plain", None):
+            return Response(response_data, status=status.HTTP_200_OK)
+
         else:
           return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
-    #Response(response_data, status=status.HTTP_200_OK)
-
+    
     def post(self, request):
         ussd_logger.info(f"REQUEST LOG HEADERS:  {request.META}")
         return self.construct_response()
