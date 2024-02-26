@@ -186,7 +186,7 @@ class USSDCallBack(APIView):
     def construct_response(self):
         response_data = self.process_request()
         print(response_data)
-        is_plain=True
+        is_plain=None
 
 
         if isinstance(response_data, dict):
@@ -218,7 +218,7 @@ class USSDCallBack(APIView):
 
                 # if is_plain==True:
                 #    return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
-        if not  is_plain:
+        if  is_plain:
             return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
         return Response(response_data, status=status.HTTP_200_OK)
     
