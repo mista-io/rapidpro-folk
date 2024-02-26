@@ -126,7 +126,6 @@ class USSDCallBack(APIView):
         r.set(key1, 1)
        
         key2 = f"USSD_MSG_KEY_{standard_contact}"
-        r.set(key2, 1)
 
 
 
