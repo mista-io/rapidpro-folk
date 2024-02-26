@@ -216,7 +216,7 @@ class USSDCallBack(APIView):
                     print(dict(response.items()))
                     return response
     # If not a dictionary, return plain text response
-        if not response_data.pop("is_plain", None):
+        if not is_plain:
             return Response(response_data, status=status.HTTP_200_OK)
 
         else:
