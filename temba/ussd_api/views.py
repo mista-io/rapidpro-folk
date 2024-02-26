@@ -6,7 +6,7 @@ Email ekeeya@oddjobs.tech
 
 from ast import literal_eval
 
-import redis
+import redis,json
 import requests
 from django.conf import settings
 from django.http import QueryDict
@@ -199,7 +199,8 @@ class USSDCallBack(APIView):
                     print("JSON")
                     is_plain = False
                     # Construct JSON response
-                    response = HttpResponse(response_data, status=status.HTTP_200_OK, content_type="application/json")
+                    response_body = json.dumps(response_data)
+                    response = HttpResponse(response_body, status=status.HTTP_200_OK, content_type="application/json")
                     response[header_key] = header_value
                     print(response)
                     print(dict(response.items()))
