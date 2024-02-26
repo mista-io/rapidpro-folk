@@ -188,7 +188,7 @@ class USSDCallBack(APIView):
         print("############resp----############",response_data)
 
 
-        if isinstance(response_data, dict) or isinstance(response_data, list) or isinstance(response_data, str):
+        if isinstance(response_data, dict) and response_data:
             if response_data.pop("is_header", None):
                 header_key = response_data.pop("header_key", None)
                 header_value = response_data.pop("header_value", None)
