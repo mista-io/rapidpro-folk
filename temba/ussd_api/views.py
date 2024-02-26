@@ -195,22 +195,28 @@ class USSDCallBack(APIView):
                 
                 if not response_data.pop("is_plain", None):
                     print("JSON")
+                    is_plain = False
                     # Construct JSON response
                     response = HttpResponse(response_data, status=status.HTTP_200_OK, content_type="application/json")
                     response[header_key] = header_value
                     print(response)
                     print(dict(response.items()))
+                    print(is_plain)
                     return response
                 else:
                     # Construct plain text response
                     print("#####PLAIN####")
                     response = HttpResponse(response_data[STANDARD_TEXT], status=status.HTTP_200_OK, content_type="text/plain")
                     response[header_key] = header_value
+                    is_plain = True
                     print(response)
                     print(dict(response.items()))
                     return response
     # If not a dictionary, return plain text response
-        return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
+        if is_plain==False:
+            return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="application/json")
+        else:
+          return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
     #Response(response_data, status=status.HTTP_200_OK)
 
     def post(self, request):
