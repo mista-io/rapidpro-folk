@@ -157,8 +157,8 @@ class USSDCallBack(APIView):
                         # mark session complete and give it a green badge
                         changeSessionStatus(ussd_session, COMPLETED, 'success')
                         action = end_action
-                        flow_executor_response = dict(text=text, action=action)
-                        print(f"Flow executor response: {flow_executor_response}")
+                    flow_executor_response = dict(text=text, action=action)
+                    print(f"Flow executor response: {flow_executor_response}")
                 else:
                     # mark session timed out and give it a red badge
                     changeSessionStatus(ussd_session, TIMED_OUT, 'danger')
