@@ -185,12 +185,15 @@ class USSDCallBack(APIView):
     def construct_response(self):
         response_data = self.process_request()
         print(response_data)
+        is_plain = False  # Initialize is_plain variable
+
 
         if isinstance(response_data, dict):
             if response_data.pop("is_header", None):
                 header_key = response_data.pop("header_key", None)
                 header_value = response_data.pop("header_value", None)
                 print(header_key, header_value)
+
                 
                 is_plain = response_data.pop("is_plain", False)
                 if not is_plain:
