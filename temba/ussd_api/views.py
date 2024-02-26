@@ -22,11 +22,13 @@ from django.http import HttpResponse
 from temba.ussd.models import NONE, TOKEN, JWT, COMPLETED, TIMED_OUT, USSDContact
 from temba.ussd.renderers import PlainTextRenderer, CustomXMLRenderer, CustomPlainTextRenderer
 from rest_framework_xml.renderers import XMLRenderer
+from temba.settings_common import REDIS_HOST, REDIS_PORT, REDIS_DB
 
 from temba.ussd.utils import ussd_logger, ProcessAggregatorRequest, standard_urn, FLOW_WAITING_FLAG, \
     changeSessionStatus, STANDARD_TEXT, STANDARD_FROM, get_receive_url
 
-r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB)
+
+r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
 HEADERS = {
     'Content-Type': 'application/x-www-form-urlencoded'  # for now this is what works with flow-executor last I checked
@@ -57,6 +59,7 @@ class USSDCallBack(APIView):
     request_factory = None
     standard_request_string = None
     renderer_classes = (JSONRenderer, PlainTextRenderer, XMLRenderer, CustomXMLRenderer, CustomPlainTextRenderer)
+   
 
     def perform_authentication(self, request):
         # overriding perform_authentication method from APIView
@@ -94,47 +97,52 @@ class USSDCallBack(APIView):
         still_in_flow = self.request_factory.is_in_flow
         handler = self.request_factory.get_handler
         end_action, reply_action = self.request_factory.flow_exit_or_continue_signal
+        # r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=15)
+       
+
         urn = self.standard_request_string[STANDARD_FROM]
 
         channel = handler.channel
-        
 
         if is_new_session:
             # send the flow executor and empty string if enable_repeat_current_step is enabled to ensure they start
             # from their current step in the flow else send them a flow start trigger
             if handler.enable_repeat_current_step:
                 text = " " if still_in_flow else handler.trigger_word
-                print("the text returned from flow **************",text)
 
             else:
                 text = handler.trigger_word
         else:
             text = self.standard_request_string[STANDARD_TEXT].strip()
-            print("the text returned from flow **************",text)
+            
         standard_contact = standard_urn(urn)
         flow_request_body = {
             "from": standard_contact,
             "text": text
         }
-        ussd_logger.info(flow_request_body)
-        print(flow_request_body)
 
         # create redis keys
         key1 = f"USSD_MO_MT_KEY_{standard_contact}"
         r.set(key1, 1)
+       
         key2 = f"USSD_MSG_KEY_{standard_contact}"
+        r.set(key2, 1)
+
+
 
         # get the shortcode receive channel to send msgs to the flow executor
 
         try:
             receive_url = get_receive_url(channel)
             req = requests.post(receive_url, flow_request_body, headers=HEADERS, timeout=10)
-            ussd_logger.info(req.content)
-            if req.status_code in [status.HTTP_200_OK, status.HTTP_201_CREATED]:
+
+            if req.status_code == 200 or req.status_code == 201:
                 # increment key1
+                
                 r.incr(key1)
                 r.expire(key1, 30)  # expire key1 after 30 s
                 data = r.blpop(key2, 15)# wait for configured time out for flow executor  #TODO this should be configurable
+
                 if data:
                     feedback = literal_eval(data[1].decode("utf-8"))
                     if 'session_status' not in feedback:
@@ -142,6 +150,7 @@ class USSDCallBack(APIView):
                     text = feedback['text']
                     flow_session_status = feedback['session_status']
                     ussd_logger.info(f"From redis key: {data}")
+                    print(f"From redis key: {data}")
 
                     if flow_session_status == FLOW_WAITING_FLAG:
                         action = reply_action
@@ -149,15 +158,18 @@ class USSDCallBack(APIView):
                         # mark session complete and give it a green badge
                         changeSessionStatus(ussd_session, COMPLETED, 'success')
                         action = end_action
-                    flow_executor_response = dict(text=text, action=action)
+                        flow_executor_response = dict(text=text, action=action)
+                        print(f"Flow executor response: {flow_executor_response}")
                 else:
                     # mark session timed out and give it a red badge
                     changeSessionStatus(ussd_session, TIMED_OUT, 'danger')
                     ussd_logger.error(f"Response timed out for redis key {key2}")
+                    print(f"Response timed out for redis key {key2}")
                     flow_executor_response = dict(text="Response timed out", action=end_action)
+                    print(f"Flow executor response: {flow_executor_response}")
                     # let's just delete this contact
                     USSDContact.contacts.delete_contact_by_urn(standard_contact)
-                r.delete(key2)  # let's delete the key after use
+                    r.delete(key2)  # let's delete the key after use
             else:
                 changeSessionStatus(ussd_session, TIMED_OUT, 'danger')
                 flow_executor_response = dict(text="Oops,An Error Occurred", action=end_action)
@@ -174,7 +186,6 @@ class USSDCallBack(APIView):
 
     def construct_response(self):
         response_data = self.process_request()
-        print(response_data)
 
         if isinstance(response_data, dict):
             if response_data.pop("is_header", None):
