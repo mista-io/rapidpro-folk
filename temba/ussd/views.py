@@ -80,7 +80,7 @@ class HandlerCRUDL(SmartCRUDL):
         submit_button_name = _("Update Handler")
         model = Handler
         
-        permission= "triggers.trigger_list"
+        permission= "ussd.handler_update"
 
         def get_form_kwargs(self):
             kwargs = super().get_form_kwargs()
@@ -122,7 +122,7 @@ class HandlerCRUDL(SmartCRUDL):
         search_fields = ['aggregator', 'short_code']
         title = _("Aggregator Handlers")
         bulk_actions = ("archive", "delete")
-        permission= "triggers.trigger_list"
+        permission= "ussd.handler_list"
         model = Handler
 
         def get_queryset(self):
