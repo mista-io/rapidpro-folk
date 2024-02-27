@@ -70,9 +70,7 @@
     </script>
     <script>
       function updateDropdownOptions(selectedAggregator, signalChoices) {
-        console.log('Updating dropdown options...');
-        console.log('Signal choices length:', signalChoices.length);
-        
+     
         var menuTypeFlagModeInput = document.getElementById('id_signal_exit_or_reply_mode');
             
         // Check if menuTypeFlagModeInput is a valid element
@@ -80,7 +78,6 @@
           // Get the current selected value
           var currentValue = menuTypeFlagModeInput.value;
       
-          console.log('Selected Aggregator in Input:', selectedAggregator);
       
           // Clear existing options (if any)
           menuTypeFlagModeInput.value = '';
@@ -96,15 +93,12 @@
             ) {
               // Append the label and value to the input field
               menuTypeFlagModeInput.value =  value;
-              menuTypeFlagModeDropdown.setAttribute('style', 'display: none;');
+              //menuTypeFlagModeDropdown.setAttribute('style', 'display: none;');
 
-              console.log('Adding option for selectedAggregator:', selectedAggregator);
-              console.log('Setting label:', label, 'and value:', value);
             }
           });
       
           // Set the selected value after adding all options
-          console.log('Updated input value:', menuTypeFlagModeInput.value);
         } else {
           console.error('Invalid menuTypeFlagModeInput:', menuTypeFlagModeInput);
         }

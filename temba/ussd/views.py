@@ -50,7 +50,7 @@ class HandlerCRUDL(SmartCRUDL):
     class Create(SpaMixin, ModalMixin, OrgPermsMixin, SmartCreateView):
         form_class = HandlerForm
         success_message = ""
-        success_url = "@ussd.handler_list"
+        # success_url = "@ussd.handler_list"
         submit_button_name = _("Create Handler")
         permission= "ussd.handler_create"
 
@@ -76,7 +76,7 @@ class HandlerCRUDL(SmartCRUDL):
 
     class Update(ModalMixin, OrgPermsMixin, SmartUpdateView):
         form_class = HandlerForm
-        success_message = ""
+        # success_message = ""
         submit_button_name = _("Update Handler")
         model = Handler
         
@@ -92,8 +92,7 @@ class HandlerCRUDL(SmartCRUDL):
             kwargs = super().get_form_kwargs()
             kwargs["org"] = self.request.org
             org_id = self.request.org.id
-            print("##################### org ID", kwargs)
-            print("##################### org ID2", org_id)
+        
             return kwargs
 
             

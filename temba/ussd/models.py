@@ -16,6 +16,8 @@ from temba.utils.ussd import AuthSignature
 
 from temba.utils.uuid import uuid4
 from temba.orgs.models import Org
+from django.utils.html import format_html
+
 
 STARTS_WITH = 1
 ENDS_WITH = 2
@@ -72,11 +74,13 @@ class Handler(SmartModel):
         verbose_name=_("Aggregator"),
         help_text=_("Your USSD aggregator"),
     )
+    
 
     channel = models.ForeignKey(
         Channel, on_delete=models.PROTECT,
         verbose_name=_("USSD Channel"),
-        help_text=_("Select any channel of 'External API' Type you would want this handler to use."),
+
+        help_text=_("The External channel is the one that will be used to send and receive USSD messages make sure you have created an external channel copy the link and paste it in browser to claim it https://staging.flowartisan.com/channels/types/external/claim/"),
     )
 
    
