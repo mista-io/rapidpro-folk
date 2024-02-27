@@ -30,6 +30,9 @@ class HandlerForm(forms.ModelForm):
         self.fields['response_structure'].initial = CONFIG_DEFAULT_RESPONSE_STRUCTURE
         # filter the channels to only show those that are for this org
         self.fields['channel'].queryset = self.fields['channel'].queryset.filter(org=self.org)
+        # filter by external channel type for channel
+        self.fields['channel'].queryset = self.fields['channel'].queryset.filter(channel_type="EX")
+
     
     class Meta:
         model = Handler
