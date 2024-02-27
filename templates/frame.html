@@ -344,7 +344,7 @@
                       {% include "org_suspended_include.html" %}
                     {% endif %}
                     {% if empty_message %}
-                    <table class="list lined selectable mb-4">  
+                    <table class="list lined selectable mb-4"   > 
                       <thead>
                         <tr>
                           <th>{{ empty_message }}</th>
@@ -354,9 +354,9 @@
                        
                        
                        
-                          <!-- Show message for no handlers configured -->
+                          <!-- Show message for no handlers configured and link to href="{% url 'ussd.handler_create' %}" -->
                           <tr>
-                            <td colspan="7" class="text-center"><span style="color: rosybrown;" >handlers have been configured yet.</span></span></td>
+                            <td colspan="7" class="text-center"><span style="color: rosybrown;" >handlers have been configured yet. <a href="{% url 'ussd.handler_create' %}" >Create new</a></span></span></td>
                           </tr>
                       </tbody>
                     </table>
