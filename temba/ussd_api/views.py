@@ -186,35 +186,40 @@ class USSDCallBack(APIView):
     def construct_response(self):
         response_data = self.process_request()
         print("############resp----############",response_data)
+        print("############type----############")
 
 
-        if isinstance(response_data, dict) and response_data:
-            if response_data.pop("is_header", None):
-                header_key = response_data.pop("header_key", None)
-                header_value = response_data.pop("header_value", None)
-                print(header_key, header_value)
-                
-                if not response_data.pop("is_plain", None):
-                    print("***********************************************************JSON")
-                    # Construct JSON response
-                    response = HttpResponse(response_data, status=status.HTTP_200_OK, content_type="application/json")
-                    response[header_key] = header_value
-                    print(response)
-                    print(dict(response.items()))
-                    return HttpResponse(response, status=status.HTTP_200_OK, content_type="application/json")  
-                else:
-                    # Construct plain text response
-                    print("#####----------------PLAIN------------------####")
-                    response = HttpResponse(response_data[STANDARD_TEXT], status=status.HTTP_200_OK, content_type="text/plain")
-                    response[header_key] = header_value
-                    # print(response)
-                    # print(dict(response.items()))
-                    return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
-   
+        if isinstance(response_data, dict) or isinstance(response_data, str):
+            print("############ dict----############")
+            if isinstance(response_data, dict):
+                response_data = json.dumps(response_data)
+                if response_data.pop("is_header", None):
+                    header_key = response_data.pop("header_key", None)
+                    header_value = response_data.pop("header_value", None)
+                    print(header_key, header_value)
+                    
+                    if not response_data.pop("is_plain", None):
+                        print("***********************************************************JSON")
+                        # Construct JSON response
+                        response = HttpResponse(response_data, status=status.HTTP_200_OK, content_type="application/json")
+                        response[header_key] = header_value
+                        print(response)
+                        print(dict(response.items()))
+                        return HttpResponse(response, status=status.HTTP_200_OK, content_type="application/json")  
+                    else:
+                        # Construct plain text response
+                        print("#####----------------PLAIN------------------####")
+                        response = HttpResponse(response_data[STANDARD_TEXT], status=status.HTTP_200_OK, content_type="text/plain")
+                        response[header_key] = header_value
+                        # print(response)
+                        # print(dict(response.items()))
+                        return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
+    
 
                 # if is_plain==True:
                 #    return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
-        
+            else:
+                return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
         return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="application/json")
     
     def post(self, request):
