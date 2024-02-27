@@ -57,6 +57,8 @@ SESSION_STATUS_CHOICES = (
 
 
 class Handler(SmartModel):
+
+    
     uuid = models.UUIDField(unique=True, default=uuid4)
     AGGREGATOR_CHOICES = [
         ('MISTA', _('MISTA')),
@@ -160,7 +162,13 @@ class Handler(SmartModel):
         blank=True,
         editable=False
     )
-
+    org_id = models.ForeignKey(
+        'orgs.Org',
+        on_delete=models.CASCADE,
+        verbose_name=_("Organization"),
+        help_text=_("The organization associated with this USSD handler"),
+        default=1,
+    )
     @property
     def generate_user_token(self):
         user, created = User.objects.get_or_create(username=str(self.uuid))

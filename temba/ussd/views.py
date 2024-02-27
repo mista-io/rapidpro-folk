@@ -57,13 +57,18 @@ class HandlerCRUDL(SmartCRUDL):
         def pre_save(self, obj):
             obj = super().pre_save(obj)
             obj.short_code = sanitize_shortcode(obj.short_code)
+            org_id = self.request.org.id
+            org_instance = Org.objects.get(id=org_id)
+            obj.org_id = org_instance
             return obj
 
         def get_form_kwargs(self):
             kwargs = super().get_form_kwargs()
             kwargs["org"] = self.request.org
-          
             return kwargs
+           
+
+          
 
         def derive_title(self):
             return _("Configure your USSD Aggregator Handler")
@@ -79,12 +84,19 @@ class HandlerCRUDL(SmartCRUDL):
         def get_form_kwargs(self):
             kwargs = super().get_form_kwargs()
             kwargs["org"] = self.request.org
+            
             return kwargs
 
         def get_form_kwargs(self):
             kwargs = super().get_form_kwargs()
             kwargs["org"] = self.request.org
+            org_id = self.request.org.id
+            print("##################### org ID", kwargs)
+            print("##################### org ID2", org_id)
             return kwargs
+
+            
+
         
 
      
@@ -112,18 +124,37 @@ class HandlerCRUDL(SmartCRUDL):
         permission= "triggers.trigger_list"
         model = Handler
 
+        def get_queryset(self):
+            # Get the current organization ID
+            org_id = self.request.org.id
+            # Filter Handler objects based on the current organization ID
+            queryset = super().get_queryset().filter(org_id_id=org_id)
+            return queryset
+
 
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
-            context['org_has_handlers'] = context['paginator'].count > 0
+
+            # Check if 'paginator' is present in the context and not None
+            if 'paginator' in context and context['paginator'] is not None:
+                paginator = context['paginator']
+                # Check if the paginator has any objects
+                context['org_has_handlers'] = paginator.count > 0
+                # Set empty message if paginator has no objects
+                if paginator.count == 0:
+                    context['empty_message'] = _("No handlers have been configured yet")
+            else:
+                # If 'paginator' is not present or None, set 'org_has_handlers' to False
+                context['org_has_handlers'] = False
+                # Provide a default empty message
+                context['empty_message'] = _("No handlers have been configured yet")
+
             context['actions'] = ("disable", "enable")
+
             return context
         
-        def derive_menu(self):
-            org = self.request.org
-            menu = []
-        
+      
     # class Delete(OrgPermsMixin, SmartDeleteView):  # Change SmartView to SmartDeleteView
     #     success_message = ""
     #     submit_button_name = _("Delete Handler")

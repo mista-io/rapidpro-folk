@@ -6,6 +6,7 @@ Email ekeeya@oddjobs.tech
 
 from django import forms
 from .models import Handler
+from .models import Org
 import socket
 
 from ..utils.fields import InputWidget, SelectWidget, CompletionTextarea, CheckboxWidget
@@ -27,11 +28,12 @@ class HandlerForm(forms.ModelForm):
         self.fields['response_structure'].required = False
         self.fields['request_structure'].initial = CONFIG_DEFAULT_REQUEST_STRUCTURE
         self.fields['response_structure'].initial = CONFIG_DEFAULT_RESPONSE_STRUCTURE
-
+        # filter the channels to only show those that are for this org
+        self.fields['channel'].queryset = self.fields['channel'].queryset.filter(org=self.org)
     
     class Meta:
         model = Handler
-        exclude = ["is_active", "uuid"]
+        exclude = ["is_active", "uuid","org_id"]
         widgets = {"short_code": InputWidget(),
                    "aggregator": SelectWidget(attrs={'onchange': 'updateStructures()', 'class': 'selected'}),
                    "channel": SelectWidget(),

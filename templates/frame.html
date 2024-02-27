@@ -343,11 +343,42 @@
                     {% if user_org.is_suspended %}
                       {% include "org_suspended_include.html" %}
                     {% endif %}
+                    {% if empty_message %}
+                    <table class="list lined selectable mb-4">  
+                      <thead>
+                        <tr>
+                          <th>{{ empty_message }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                       
+                       
+                       
+                          <!-- Show message for no handlers configured -->
+                          <tr>
+                            <td colspan="7" class="text-center"><span style="color: rosybrown;" >handlers have been configured yet.</span></span></td>
+                          </tr>
+                      </tbody>
+                    </table>
+                    
+                    {% endif %}
                     {% if messages %}
                       {% for msg in messages %}
                         <temba-alert class="mb-3">
                           {{ msg }}
                         </temba-alert>
+                      {% endfor %}
+                    {% endif %}
+                   
+                    
+                
+                    {% if messages %}
+                      {% for msg in messages %}
+                        <temba-alert class="mb-3">
+                          {{ msg }}
+                        </temba-alert>
+                        
+
                       {% endfor %}
                     {% endif %}
                   {% endblock alert-messages %}
