@@ -129,7 +129,7 @@ class HandlerCRUDL(SmartCRUDL):
             # Get the current organization ID
             org_id = self.request.org.id
             # Filter Handler objects based on the current organization ID
-            queryset = super().get_queryset().filter(org_id_id=13)
+            queryset = super().get_queryset().filter(org_id_id=org_id)
             return queryset
 
 
