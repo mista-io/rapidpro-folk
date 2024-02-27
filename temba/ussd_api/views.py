@@ -219,6 +219,7 @@ class USSDCallBack(APIView):
                 # if is_plain==True:
                 #    return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
             else:
+                print("############ str----############")
                 return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="text/plain")
         return HttpResponse(response_data, status=status.HTTP_200_OK, content_type="application/json")
     
