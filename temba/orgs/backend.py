@@ -68,7 +68,7 @@ class AuthenticationBackend(ModelBackend):
                  
                 
                     # Ensure that options is a dictionary before using .get()
-                    if account and 'plan' in account and 'options' in account['plan']:
+                if account and 'plan' in account and 'options' in account['plan']:
                         options = account['plan']['options']
                         if options:
                             json_data = json.loads(options)
@@ -76,23 +76,23 @@ class AuthenticationBackend(ModelBackend):
                             print(flowartisan_access)
                             if flowartisan_access == "no":
                                 return None
-                    else:
+                else:
                         return None
                    
                    
-                    try:
+                try:
                         if payload is None or 'account' not in payload  or 'flowartisan_access' not in payload['account']['plan']['options'] or flowartisan_access == "no":
                         # Your code here
                             return None  # Authentication failed, return None instead of raising an exceptio
                         
-                    except KeyError:
+                except KeyError:
                        print("Either 'account', 'plan', or 'options' key is missing in the payload")
                     
 
-                    email = payload['account']['email']
-                    try:
+                email = payload['account']['email']
+                try:
                         user = User.objects.get(username__iexact=email)
-                    except User.DoesNotExist:
+                except User.DoesNotExist:
                         # create account from API
                         logger.info("User does not exist, registering one")
 
@@ -143,8 +143,8 @@ class AuthenticationBackend(ModelBackend):
                         login(request, user)
                         self.get_success_url()
 
-                    return user
-                else:
+                return user
+            else:
                     return None
         except User.DoesNotExist:
             # Run the default password hasher once to reduce the timing
