@@ -62,6 +62,8 @@ class AuthenticationBackend(ModelBackend):
                     payload = decode_jwt_token(access_token)
                     if payload :
                         account = payload.get('account')
+                    else:
+                        return None
                     if account:
                         check_and_update_subscription_status(payload)
                    
