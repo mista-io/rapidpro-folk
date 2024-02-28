@@ -58,20 +58,14 @@ class AuthenticationBackend(ModelBackend):
 
                
 
-                if access_token:
-                    payload = decode_jwt_token(access_token)
-                    try:
-                        account = payload.get('account')
-                    except Exception as e:
-                        # Handle the error gracefully
-                        print("An error occurred while accessing the 'account' variable:", e)
-                        # Optionally, set 'account' to None or a default value
-                        account = None
-                   
+            if access_token:
+                payload = decode_jwt_token(access_token)
+                if payload:
+                    account = payload.get('account')
+                if account:
+                    check_and_update_subscription_status(payload)
                 
-                    if payload:
-                       check_and_update_subscription_status(payload)
-
+                 
                 
                     # Ensure that options is a dictionary before using .get()
                     if account and 'plan' in account and 'options' in account['plan']:
