@@ -96,7 +96,7 @@ class Handler(SmartModel):
         max_length=50,
         unique=True,
         null=False,
-        help_text=_("The USSD shortcode sent by the aggregator in the request."),
+        help_text=_("The USSD shortcode sent by the aggregator in the request. it should be the same as above in the channel"),
         verbose_name=_("Short code")
     )
 
