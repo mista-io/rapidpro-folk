@@ -50,7 +50,13 @@ class AuthenticationBackend(ModelBackend):
 
             data = {"email": username, "password": password}
             headers = {"Authorization": "Bearer " + settings.MISTA_ADMIN_TOKEN}
-            response = requests.post(url, headers=headers, json=data)
+            # wait some seconds until the url api responds 
+            try :
+                response = requests.post(url, headers=headers, json=data,timeout=15) 
+            # response = requests.post(url, headers=headers, json=data)
+            except requests.exceptions.RequestException as e:
+                print(e)
+                return None
 
             if response.status_code == 200:
                 # Authentication was successful
@@ -59,10 +65,15 @@ class AuthenticationBackend(ModelBackend):
                
 
                 if access_token:
+
                     payload = decode_jwt_token(access_token)
+                    print("igitangaza",payload)
                     if payload :
-                        account = payload.get('account')
+                        print(payload)
+                        account = payload['account']
+                        print(account)
                     else:
+                        print("Payload is None")
                         return None
                     if account:
                         check_and_update_subscription_status(payload)
@@ -171,15 +182,12 @@ def decode_jwt_token(token: str):
 
     try:
         payload = jwt.decode(stripped_bearer_token, secret, algorithms=['HS256'])
-        print(payload)
         return payload
     except jwt.exceptions.InvalidTokenError:
         return None  # Return None instead of raising an exception for invalid credentials
 
        
-    except InvalidTokenError:
-        raise Exception("Invalid authentication credentials")
-
+   
 
 def strip_bearer_token(token):
     """
