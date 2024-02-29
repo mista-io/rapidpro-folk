@@ -140,7 +140,7 @@ class USSDCallBack(APIView):
                 
                 r.incr(key1)
                 r.expire(key1, 30)  # expire key1 after 30 s
-                data = r.blpop(key2, 15)# wait for configured time out for flow executor  #TODO this should be configurable
+                data = r.blpop(key2, 20)# wait for configured time out for flow executor  #TODO this should be configurable
 
                 if data:
                     feedback = literal_eval(data[1].decode("utf-8"))
