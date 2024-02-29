@@ -52,7 +52,7 @@ class AuthenticationBackend(ModelBackend):
             headers = {"Authorization": "Bearer " + settings.MISTA_ADMIN_TOKEN}
             # wait some seconds until the url api responds 
             try :
-                response = requests.post(url, headers=headers, json=data,timeout=15) 
+                response = requests.post(url, headers=headers, json=data,timeout=30) 
             # response = requests.post(url, headers=headers, json=data)
             except requests.exceptions.RequestException as e:
                 print(e)
