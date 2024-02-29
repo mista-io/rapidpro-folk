@@ -127,6 +127,8 @@ class USSDCallBack(APIView):
        
         key2 = f"USSD_MSG_KEY_{standard_contact}"
 
+        print("Key 2", key2)
+
 
 
         # get the shortcode receive channel to send msgs to the flow executor
@@ -141,6 +143,7 @@ class USSDCallBack(APIView):
                 r.incr(key1)
                 r.expire(key1, 30)  # expire key1 after 30 s
                 data = r.blpop(key2, 20)# wait for configured time out for flow executor  #TODO this should be configurable
+                print(f"Data from redis: {data}")
 
                 if data:
                     feedback = literal_eval(data[1].decode("utf-8"))
@@ -149,7 +152,7 @@ class USSDCallBack(APIView):
                     text = feedback['text']
                     flow_session_status = feedback['session_status']
                     ussd_logger.info(f"From redis key: {data}")
-                    # print(f"From redis key: {data}")
+                    print(f"From redis key: {data}")
 
                     if flow_session_status == FLOW_WAITING_FLAG:
                         action = reply_action
@@ -158,7 +161,7 @@ class USSDCallBack(APIView):
                         changeSessionStatus(ussd_session, COMPLETED, 'success')
                         action = end_action
                     flow_executor_response = dict(text=text, action=action)
-                    # print(f"Flow executor response: {flow_executor_response}")
+                    print(f"Flow executor response: {flow_executor_response}")
                 else:
                     # mark session timed out and give it a red badge
                     changeSessionStatus(ussd_session, TIMED_OUT, 'danger')
