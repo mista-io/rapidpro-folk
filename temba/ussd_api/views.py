@@ -44,6 +44,7 @@ class SendURL(APIView):
         try:
             content = request.data.dict()
             ussd_logger.info(f"From Flow-executor: {content}")
+            print(f"##############++++From Flow-executor +++###########################: {content}")
             # decrement key1
             to = content['to_no_plus']
             key2 = f"USSD_MSG_KEY_{to}"
