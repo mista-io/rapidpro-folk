@@ -8,7 +8,13 @@
 		},
 		{
 			"path": "../dashboardv5-CI/mistav5"
+		},
+		{
+			"path": "../../Mista-PC/projects/mista_v4_service_hub/ussd_golang"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"bitoAI.codeCompletion.enableAutoCompletion": true,
+		"bitoAI.codeCompletion.enableCommentToCode": true
+	}
 }

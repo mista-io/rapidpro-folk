@@ -4,6 +4,7 @@ from django.conf.urls.static import static
 from django.urls import re_path
 from django.views.generic import RedirectView
 from django.views.i18n import JavaScriptCatalog
+from temba.views import CustomLoginView
 
 from temba.channels.android.views import register, sync
 
@@ -42,6 +43,8 @@ urlpatterns += [
     re_path(r"^relayers/relayer/register/$", register, {}, "register"),
     re_path(r"users/user/forget/", RedirectView.as_view(pattern_name="orgs.user_forget", permanent=True)),
     re_path(r"^users/", include("smartmin.users.urls")),
+    # re_path(r"^login/$", CustomLoginView.as_view(), name="custom_login"),  # Use your custom login view
+
     re_path(r"^imports/", include("smartmin.csv_imports.urls")),
     re_path(r"^assets/", include("temba.assets.urls")),
     re_path(r"^jsi18n/$", JavaScriptCatalog.as_view(), js_info_dict, name="django.views.i18n.javascript_catalog"),

@@ -1,0 +1,99 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flowartisan:: Revolutionizing Flow Building Without Code</title>
+    <link type="text/css" rel="stylesheet" href="{% static 'css/custom_login.css' %}">
+    <style type="text/css">
+        input {
+            width: 100%;
+        }
+        .content-card {
+            width: 28em;
+        }
+        .error {
+            color: red; /* Example style for error state */
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-title">
+    <!-- Page title content -->
+    {% block page_title %}
+    {% endblock %}
+</div>
+
+<div class="login-box">
+  <div class="login-box-formbox">
+      <div class="login-box-signup">
+          Don't have an account? <a href="https://dashboard.mista.io/register">Sign Up</a>
+      </div>
+      <div class="login-box-login">
+          <h1>Welcome to Flow Artisan</h1>
+          <p>
+              Please sign in with your email address and password. If you already have an account on dashboard.mista.io, use your credentials to log in.
+          </p>
+          <form id="login-form" method="POST" action="/users/login/">
+              {% csrf_token %}
+     
+              {% if form.errors %}
+              {% for field, errors in form.errors.items %}
+                  {% if field == '__all__' %}
+                      <div class="error-message">
+                          {{ errors }}
+                      </div>
+                  {% endif %}
+              {% endfor %}
+          {% endif %}
+          
+            
+             
+              <div>
+                  <label for="email">E-Mail</label>
+                  <input type="text" name="username" maxlength="254" placeholder="Email Address" value="" class="input-email {% if form.username.errors %}error{% endif %}" />
+                  {% if form.username.errors %}
+                  <div class="error-message">
+                      {{ form.username.errors }}
+                  </div>
+                  {% endif %}
+              </div>
+              <div>
+                  <label for="password">Password</label>
+                  <input type="password" name="password" placeholder="Password" class="input-password" />
+                  {% if form.password.errors %}
+                  <div class="error-message">
+                      {{ form.password.errors }}
+                  </div>
+                  {% endif %}
+              </div>
+              <div class="mt-2 text-right">
+                <a href="https://dashboard.mista.io/password/reset">Forgot Password?</a>              </div>
+              <div class="mt-6">
+                <input type="submit" value="Sign In" class="btn button-primary" />              </div>
+          </form>
+      </div>
+  </div>
+  <div class="login-box-quotebox">
+      <div class="quote-container">
+        <!-- company brand -->
+    
+            
+  <a href="/">
+    <img class="main-logo" alt="Logo" src="{% static 'images/mlogo.png' %}">
+  </a>
+
+          
+          <div class="quote"> The Art of Simplicity</div>
+          <div class="quote-small">
+              "Welcome to our platform! With our flow, you can build any conversation flow with ease and fun. No coding skills required! Create engaging and interactive conversations effortlessly."
+          </div>
+      </div>
+  </div>
+</div>
+
+</body>
+</html>

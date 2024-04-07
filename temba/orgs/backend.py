@@ -6,8 +6,6 @@ from temba.orgs.models import Org
 from django.db import transaction
 from requests.exceptions import RequestException, Timeout
 from time import sleep
-
-
 from django_redis import get_redis_connection
 import logging
 import jwt
@@ -45,124 +43,174 @@ class AuthenticationBackend(ModelBackend):
             return super().pre_process(request, *args, **kwargs)
 
 
-    def authenticate(self, request, username=None, password=None, **kwargs):
-        try:
-            url = "https://api.mista.io/sms/auth/authy"
-            #url = "http://localhost:8001/sms/auth/authy"
+    def authenticate(self, request, username=None, password=None ,**kwargs):
+        tokenx = get_token_from_redis(username)
 
-            data = {"email": username, "password": password}
-            headers = {"Authorization": "Bearer " + settings.MISTA_ADMIN_TOKEN}
-            # wait some seconds until the url api responds 
-            try :
-                response = requests.post(url, headers=headers, json=data,timeout=30) 
-            # response = requests.post(url, headers=headers, json=data)
-            except requests.exceptions.RequestException as e:
-                print(e)
-                return None
 
-            if response.status_code == 200:
-                # Authentication was successful
-                access_token = response.json().get('access_token')
+        # # get vtoken from the request
+        user_vtoken=request.POST.get('vtoken')
+        redis_vtoken = get_vtoken_from_redis(username)
 
-               
 
-                if access_token:
+        if tokenx and redis_vtoken == user_vtoken:
+            logger.info(f"Successfully logged in user '{username}' using token from Redis.")
+            print("Token found in Redis")
+            # Token found in Redis, decode it and process authentication
+            payload = decode_jwt_token(tokenx)
+            if payload:
+                account = payload.get('account')
+                if account:
+                    check_and_update_subscription_status(payload)
+                email = payload['account']['email']
+                try:
+                    user = User.objects.get(username__iexact=email)
+                except User.DoesNotExist:
+                    # Create account from API
+                    logger.info("User does not exist, registering one")
 
-                    payload = decode_jwt_token(access_token)
-                    print("igitangaza",payload)
-                    if payload :
-                        print(payload)
-                        account = payload['account']
-                        print(account)
-                    else:
-                        print("Payload is None")
+                    # All required fields are present
+                    first_name = payload['account']['firstname']
+                    last_name = payload['account']['lastname']
+                    organization = payload['account']['organization']
+
+                    required_fields = [first_name, last_name, organization]
+                    missing_fields = [field for field in required_fields if not field]
+                    if missing_fields:
+                        # Handle the case where one or more required fields are missing
                         return None
-                    if account:
-                        check_and_update_subscription_status(payload)
-                   
-                    # Ensure that options is a dictionary before using .get()
-                    if account and 'plan' in account and 'options' in account['plan']:
-                        options = account['plan']['options']
-                        if options:
-                            json_data = json.loads(options)
-                            flowartisan_access = json_data.get('flowartisan_access')
-                            print(flowartisan_access)
-                            if flowartisan_access == "no":
-                                return None
-                    else:
-                        return None
-                   
-                   
-                    try:
-                        if payload is None or 'account' not in payload  or 'flowartisan_access' not in payload['account']['plan']['options'] or flowartisan_access == "no":
-                        # Your code here
-                            return None  # Authentication failed, return None instead of raising an exceptio
-                        
-                    except KeyError:
-                       print("Either 'account', 'plan', or 'options' key is missing in the payload")
-                    
+                    # Proceed with registration
 
-                    email = payload['account']['email']
-                    try:
-                        user = User.objects.get(username__iexact=email)
-                    except User.DoesNotExist:
-                        # create account from API
-                        logger.info("User does not exist, registering one")
+                    # Instead of creating user directly, use create_user to handle password hashing
+                    user = User.objects.create_user(
+                        username=email,
+                        email=payload['account']['email'],
+                        first_name=first_name,
+                        last_name=last_name,
+                        password=None  # Password is handled by the authentication service
+                    )
 
-                        # All required fields are present
-                        first_name = payload['account']['firstname']
-                        last_name = payload['account']['lastname']
+                    # Create the Organization
+                    anonymous = User.objects.get(pk=1)  # the default anonymous user
+                    org_data = dict(name=organization, created_by=anonymous, modified_by=anonymous, 
+                                    timezone=settings.USER_TIME_ZONE, language=settings.DEFAULT_LANGUAGE,flow_languages='{eng}')
+
+                    org = Org.objects.create(**org_data)
+
+                    # Add user to organization as administrator
+                    org.add_user(user, OrgRole.ADMINISTRATOR)
+                    logger.info("New user added to an organization")
+                    logger.info(org)
+
+                    # Additional tasks specific to your application
+                    analytics.identify(user, brand=request.branding, org=org)
+                    analytics.track(user, "temba.org_signup", properties=dict(org=org.name))                     
+                    switch_to_org(request, org)
+                    org.initialize(sample_flows=True)
+
+                    # Log user in
+                    login(request, user)
+                    self.get_success_url()
+
+                return user
 
 
-                        organization = payload['account']['organization']
+        # try:
+        #     url = "https://api.mista.io/sms/auth/authy"
+        #     #url = "http://localhost:8001/sms/auth/authy"
 
-                        required_fields = [first_name, last_name, organization]
-                        missing_fields = [field for field in required_fields if not field]
-                        if  missing_fields:
-                            # Handle the case where one or more required fields are missing
-                            return  None
-                        # Proceed with registration
-                    
+        #     data = {"email": username, "password": password}
+        #     headers = {"Authorization": "Bearer " + settings.MISTA_ADMIN_TOKEN}
+        #     # Wait some seconds until the url api responds 
+        #     try :
+        #         response = requests.post(url, headers=headers, json=data,timeout=30) 
+        #     except requests.exceptions.RequestException as e:
+        #         print(e)
+        #         return None
 
-                        # Instead of creating user directly, use create_user to handle password hashing
-                        user = User.objects.create_user(
-                            username=email,
-                            email=payload['account']['email'],
-                            first_name=first_name,
-                            last_name=last_name,
-                            password=None  # Password is handled by the authentication service
-                        )
+        #     if response.status_code == 200:
+        #         # Authentication was successful
+        #         access_token = response.json().get('access_token')
+        #         print("access_token generated from api.mista.io")
 
-                        # create the Organization
-                        anonymous = User.objects.get(pk=1)  # the default anonymous user
-                        org_data = dict(name=organization, created_by=anonymous, modified_by=anonymous, 
-                                        timezone=settings.USER_TIME_ZONE, language=settings.DEFAULT_LANGUAGE,flow_languages='{eng}')
+        #         if access_token:
+        #             payload = decode_jwt_token(access_token)
+        #             if payload:
+        #                 account = payload['account']
+        #                 if account:
+        #                     check_and_update_subscription_status(payload)
 
-                        org = Org.objects.create(**org_data)
-                       
-                        
+        #                 if account and 'plan' in account and 'options' in account['plan']:
+        #                     options = account['plan']['options']
+        #                     if options:
+        #                         json_data = json.loads(options)
+        #                         flowartisan_access = json_data.get('flowartisan_access')
+        #                         print(flowartisan_access)
+        #                         if flowartisan_access == "no":
+        #                             return None
+        #                 else:
+        #                     return None
 
-                        org.add_user(user, OrgRole.ADMINISTRATOR)
-                        logger.info("New user added to an organization")
-                        logger.info(org)
+        #                 email = payload['account']['email']
+        #                 try:
+        #                     user = User.objects.get(username__iexact=email)
+        #                 except User.DoesNotExist:
+        #                     # Create account from API
+        #                     logger.info("User does not exist, registering one")
 
-                        # Additional tasks specific to your application
-                        #self.object = org  # Assuming self.object is used elsewhere in your code
-                        analytics.identify(user, brand=request.branding, org=org)
-                        analytics.track(user, "temba.org_signup", properties=dict(org=org.name))                     
-                        switch_to_org(request, org)
-                        org.initialize(sample_flows=True)
+        #                     # All required fields are present
+        #                     first_name = payload['account']['firstname']
+        #                     last_name = payload['account']['lastname']
+        #                     organization = payload['account']['organization']
 
-                        login(request, user)
-                        self.get_success_url()
+        #                     required_fields = [first_name, last_name, organization]
+        #                     missing_fields = [field for field in required_fields if not field]
+        #                     if missing_fields:
+        #                         # Handle the case where one or more required fields are missing
+        #                         return None
 
-                    return user
-                else:
-                    return None
-        except User.DoesNotExist:
-            # Run the default password hasher once to reduce the timing
-            # difference between an existing and a non-existing user (#20760).
-            User().set_password(password)
+        #                     # Proceed with registration
+        #                     # Instead of creating user directly, use create_user to handle password hashing
+        #                     user = User.objects.create_user(
+        #                         username=email,
+        #                         email=payload['account']['email'],
+        #                         first_name=first_name,
+        #                         last_name=last_name,
+        #                         password=None  # Password is handled by the authentication service
+        #                     )
+
+        #                     # Create the Organization
+        #                     anonymous = User.objects.get(pk=1)  # the default anonymous user
+        #                     org_data = dict(name=organization, created_by=anonymous, modified_by=anonymous, 
+        #                                     timezone=settings.USER_TIME_ZONE, language=settings.DEFAULT_LANGUAGE,flow_languages='{eng}')
+
+        #                     org = Org.objects.create(**org_data)
+
+        #                     # Add user to organization as administrator
+        #                     org.add_user(user, OrgRole.ADMINISTRATOR)
+        #                     logger.info("New user added to an organization")
+        #                     logger.info(org)
+
+        #                     # Additional tasks specific to your application
+        #                     analytics.identify(user, brand=request.branding, org=org)
+        #                     analytics.track(user, "temba.org_signup", properties=dict(org=org.name))                     
+        #                     switch_to_org(request, org)
+        #                     org.initialize(sample_flows=True)
+
+        #                     # Log user in
+        #                     login(request, user)
+        #                     self.get_success_url()
+
+        #                 return user
+        #             else:
+        #                 print("Payload is None")
+        #                 return None
+        #     else:
+        #         print("Authentication failed")
+        #         return None
+        # except User.DoesNotExist:
+        #     # Run the default password hasher once to reduce the timing
+        #     # difference between an existing and a non-existing user (#20760).
+        #     User().set_password(password)
 
 
        
@@ -233,3 +281,23 @@ def check_and_update_subscription_status(payload):
         # Handle the case where org email is not provided in payload
         return None
 
+def get_token_from_redis(username):
+    try:
+        r = get_redis_connection()
+        token_key = f'token-{username}'
+        token = r.get(token_key)
+        return token.decode('utf-8') if token else None
+    except Exception as e:
+        # Handle exceptions, such as Redis connection errors
+        print(e)
+        return None
+def get_vtoken_from_redis(username):
+    try:
+        r = get_redis_connection()
+        vtoken_key = f'vtoken-{username}'
+        vtoken = r.get(vtoken_key)
+        return vtoken.decode('utf-8') if vtoken else None
+    except Exception as e:
+        # Handle exceptions, such as Redis connection errors
+        print(e)
+        return None

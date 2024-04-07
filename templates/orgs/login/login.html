@@ -8,92 +8,143 @@
     <title>Flowartisan:: Revolutionizing Flow Building Without Code</title>
     <link type="text/css" rel="stylesheet" href="{% static 'css/custom_login.css' %}">
     <style type="text/css">
-        input {
-            width: 100%;
+        .login-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
         .content-card {
-            width: 28em;
+            text-align: center;
         }
-        .error {
-            color: red; /* Example style for error state */
+        .button-primary {
+            background-color: #2bcb75;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            position: relative;
+        }
+        .redirect-message {
+            margin-top: 20px;
+            font-style: italic;
+        }
+        @keyframes spin {
+            0% {
+                -webkit-transform: rotate(0deg);
+                transform: rotate(0deg);
+            }
+            100% {
+                -webkit-transform: rotate(360deg);
+                transform: rotate(360deg);
+            }
+        }
+        .loader {
+            border-radius: 20px;
+            border: 4px solid rgba(0, 128, 128, 0.4);
+            display: inline-block;
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            top: 50%;
+            right: 10px;
+            margin-top: -10px;
+        }
+        .loader:after {
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
+            content: "";
+            border: 4px solid transparent;
+            border-radius: 20px;
+            border-top-color: #008080;
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            bottom: -4px;
+            left: -4px;
         }
     </style>
 </head>
 <body>
-
-<div class="page-title">
-    <!-- Page title content -->
-    {% block page_title %}
-    {% endblock %}
+<div class="content-card">
+    <h1>Welcome to Flow Artisan</h1>
+    <p>
+        Please click the button below to continue to the Flow Studio portal.
+    </p>
+    {% if not request.GET.id %}
+        <div class="error-message">
+            Error: User ID is missing in the URL.
+        </div>
+    {% endif %}
+    <button type="button" onclick="redirectToPortal()" class="button-primary">Continue to Flow Studio Portal<span class="loader"></span></button>
+    <p class="redirect-message">If you are not redirected, <a href="https://dashboard.mista.io/">click here</a>.</p>
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        redirectToPortal();
+    });
 
-<div class="login-box">
-  <div class="login-box-formbox">
-      <div class="login-box-signup">
-          Don't have an account? <a href="https://dashboard.mista.io/register">Sign Up</a>
-      </div>
-      <div class="login-box-login">
-          <h1>Welcome to Flow Artisan</h1>
-          <p>
-              Please sign in with your email address and password. If you already have an account on dashboard.mista.io, use your credentials to log in.
-          </p>
-          <form id="login-form" method="POST" action="/users/login/">
-              {% csrf_token %}
-     
-              {% if form.errors %}
-              {% for field, errors in form.errors.items %}
-                  {% if field == '__all__' %}
-                      <div class="error-message">
-                          {{ errors }}
-                      </div>
-                  {% endif %}
-              {% endfor %}
-          {% endif %}
-          
-            
-             
-              <div>
-                  <label for="email">E-Mail</label>
-                  <input type="text" name="username" maxlength="254" placeholder="Email Address" value="" class="input-email {% if form.username.errors %}error{% endif %}" />
-                  {% if form.username.errors %}
-                  <div class="error-message">
-                      {{ form.username.errors }}
-                  </div>
-                  {% endif %}
-              </div>
-              <div>
-                  <label for="password">Password</label>
-                  <input type="password" name="password" placeholder="Password" class="input-password" />
-                  {% if form.password.errors %}
-                  <div class="error-message">
-                      {{ form.password.errors }}
-                  </div>
-                  {% endif %}
-              </div>
-              <div class="mt-2 text-right">
-                <a href="https://dashboard.mista.io/password/reset">Forgot Password?</a>              </div>
-              <div class="mt-6">
-                <input type="submit" value="Sign In" class="btn button-primary" />              </div>
-          </form>
-      </div>
-  </div>
-  <div class="login-box-quotebox">
-      <div class="quote-container">
-        <!-- company brand -->
-    
-            
-  <a href="/">
-    <img class="main-logo" alt="Logo" src="{% static 'images/mlogo.png' %}">
-  </a>
+    function redirectToPortal() {
+        // Capture email from URL query parameter
+        function getEmailFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+        function getVTokenFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('vtoken');
+        }
 
-          
-          <div class="quote"> The Art of Simplicity</div>
-          <div class="quote-small">
-              "Welcome to our platform! With our flow, you can build any conversation flow with ease and fun. No coding skills required! Create engaging and interactive conversations effortlessly."
-          </div>
-      </div>
-  </div>
-</div>
+       email = getEmailFromURL();
+       vtoken = getVTokenFromURL();
+
+        // If email is null or empty, redirect to http://localhost:8000
+        if (!email) {
+            window.location.href = 'http://localhost:8001';
+            return; // Stop further execution
+        }
+        if (!vtoken) {
+            window.location.href = 'http://localhost:8001';
+            return; // Stop further execution
+        }
+
+        // Delete the email item from local storage
+        localStorage.removeItem('email');
+
+        // Set the email value to the username field
+        const usernameInput = document.getElementById('username');
+        if (usernameInput) {
+            usernameInput.value = email;
+        }
+
+        // Store the email in local storage
+        localStorage.setItem('email', email);
+
+        // Send AJAX request to the login endpoint
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/users/login/', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    // Success
+                    console.log('Login successful');
+                    window.location.href = 'http://localhost:8000/msg/?email=' + encodeURIComponent(email);
+                } else {
+                    // Error
+                    console.error('Login failed');
+                }
+            }
+        };
+        xhr.send('username=' + encodeURIComponent(email) + '&password=None&csrfmiddlewaretoken={{ csrf_token }}'+'&vtoken=' + encodeURIComponent(vtoken));
+    }
+</script>
 
 </body>
 </html>
