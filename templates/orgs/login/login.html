@@ -106,11 +106,11 @@
 
         // If email is null or empty, redirect to http://localhost:8000
         if (!email) {
-            window.location.href = 'http://localhost:8001';
+            window.location.href = 'https://dashboard.mista.io';
             return; // Stop further execution
         }
         if (!vtoken) {
-            window.location.href = 'http://localhost:8001';
+            window.location.href = 'https://dashboard.mista.io';
             return; // Stop further execution
         }
 
@@ -135,7 +135,7 @@
                 if (xhr.status === 200) {
                     // Success
                     console.log('Login successful');
-                    window.location.href = 'http://localhost:8000/msg/?email=' + encodeURIComponent(email);
+                    window.location.href = 'https://staging.flowartisan.com/msg/?email=' + encodeURIComponent(email);
                 } else {
                     // Error
                     console.error('Login failed');
