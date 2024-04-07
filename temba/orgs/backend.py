@@ -31,26 +31,22 @@ logger = logging.getLogger(__name__)
 
 class AuthenticationBackend(ModelBackend):
     def get_success_url(self):
-            #i will implement this later
-            return "%s?start" % reverse("public.public_welcome")
+        # I will implement this later
+        return "%s?start" % reverse("public.public_welcome")
 
     def pre_process(self, request, *args, **kwargs):
-        # if our brand doesn't allow signups, then redirect to the homepage instead
-        if "signups" not in request.branding.get("features", []):  # pragma: needs cover
+        # If our brand doesn't allow signups, then redirect to the homepage instead
+        if "signups" not in request.branding.get("features", []):
             return HttpResponseRedirect(reverse("public.public_index"))
-
         else:
             return super().pre_process(request, *args, **kwargs)
 
-
-    def authenticate(self, request, username=None, password=None ,**kwargs):
+    def authenticate(self, request, username=None, password=None, **kwargs):
         tokenx = get_token_from_redis(username)
 
-
-        # # get vtoken from the request
-        user_vtoken=request.POST.get('vtoken')
+        # Get vtoken from the request
+        user_vtoken = request.POST.get('vtoken')
         redis_vtoken = get_vtoken_from_redis(username)
-
 
         if tokenx and redis_vtoken == user_vtoken:
             logger.info(f"Successfully logged in user '{username}' using token from Redis.")
@@ -61,6 +57,26 @@ class AuthenticationBackend(ModelBackend):
                 account = payload.get('account')
                 if account:
                     check_and_update_subscription_status(payload)
+
+                    # Ensure that options is a dictionary before using .get()
+                    if account and 'plan' in account and 'options' in account['plan']:
+                        options = account['plan']['options']
+                        if options:
+                            json_data = json.loads(options)
+                            flowartisan_access = json_data.get('flowartisan_access')
+                            print(flowartisan_access)
+                            if flowartisan_access == "no":
+                                return None
+                    else:
+                        return None
+
+                    try:
+                        if payload is None or 'account' not in payload or 'flowartisan_access' not in payload['account']['plan']['options'] or flowartisan_access == "no":
+                            return None  # Authentication failed, return None instead of raising an exception
+
+                    except KeyError:
+                        print("Either 'account', 'plan', or 'options' key is missing in the payload")
+
                 email = payload['account']['email']
                 try:
                     user = User.objects.get(username__iexact=email)
@@ -91,8 +107,9 @@ class AuthenticationBackend(ModelBackend):
 
                     # Create the Organization
                     anonymous = User.objects.get(pk=1)  # the default anonymous user
-                    org_data = dict(name=organization, created_by=anonymous, modified_by=anonymous, 
-                                    timezone=settings.USER_TIME_ZONE, language=settings.DEFAULT_LANGUAGE,flow_languages='{eng}')
+                    org_data = dict(name=organization, created_by=anonymous, modified_by=anonymous,
+                                    timezone=settings.USER_TIME_ZONE, language=settings.DEFAULT_LANGUAGE,
+                                    flow_languages='{eng}')
 
                     org = Org.objects.create(**org_data)
 
@@ -103,7 +120,7 @@ class AuthenticationBackend(ModelBackend):
 
                     # Additional tasks specific to your application
                     analytics.identify(user, brand=request.branding, org=org)
-                    analytics.track(user, "temba.org_signup", properties=dict(org=org.name))                     
+                    analytics.track(user, "temba.org_signup", properties=dict(org=org.name))
                     switch_to_org(request, org)
                     org.initialize(sample_flows=True)
 
@@ -112,6 +129,10 @@ class AuthenticationBackend(ModelBackend):
                     self.get_success_url()
 
                 return user
+            else:
+                return None
+        else:
+            return None
 
 
         # try:
