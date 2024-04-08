@@ -22,13 +22,13 @@ from django.http import HttpResponse
 from temba.ussd.models import NONE, TOKEN, JWT, COMPLETED, TIMED_OUT, USSDContact
 from temba.ussd.renderers import PlainTextRenderer, CustomXMLRenderer, CustomPlainTextRenderer
 from rest_framework_xml.renderers import XMLRenderer
-from temba.settings_common import REDIS_HOST, REDIS_PORT, REDIS_DB
+from temba.settings_common import REDIS_HOST, REDIS_PORT, REDIS_DB, REDIS_PASSWORD
 
 from temba.ussd.utils import ussd_logger, ProcessAggregatorRequest, standard_urn, FLOW_WAITING_FLAG, \
     changeSessionStatus, STANDARD_TEXT, STANDARD_FROM, get_receive_url
 
 
-r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASSWORD)
 
 HEADERS = {
     'Content-Type': 'application/x-www-form-urlencoded'  # for now this is what works with flow-executor last I checked
