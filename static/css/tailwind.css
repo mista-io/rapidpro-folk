@@ -12281,7 +12281,7 @@ code {
 
 .text-gray-500 {
   --tw-text-opacity: 1;
-  color: rgba(160, 160, 160, var(--tw-text-opacity));
+  color: rgb(237 237 237 / 0%);
 }
 
 .text-gray-600 {
