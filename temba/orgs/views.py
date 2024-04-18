@@ -1458,7 +1458,7 @@ class OrgCRUDL(SmartCRUDL):
                     name=_("Channels"),
                     icon="channel",
                     endpoint="channels.channel_claim",
-                    href="channels.channel_list",
+                    href="channels.channel_claim",
                     perm="channels.channel_list",
                 ),
                 self.create_menu_item(
