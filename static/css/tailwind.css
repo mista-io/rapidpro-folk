@@ -1328,7 +1328,7 @@ a:hover {
 }
 
 .lbl-group temba-icon {
-    --icon-color: rgba(0,0,0,.5);
+    --icon-color: rgba(10, 52, 131, 0.5) !important;
     margin-right: 3px;
   }
 

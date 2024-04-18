@@ -1453,6 +1453,14 @@ class OrgCRUDL(SmartCRUDL):
 
             menu += [
                 self.create_space(),
+                 self.create_menu_item(
+                    menu_id="channels",
+                    name=_("Channels"),
+                    icon="channel",
+                    endpoint="channels.channel_claim",
+                    href="channels.channel_list",
+                    perm="channels.channel_list",
+                ),
                 self.create_menu_item(
                     menu_id="msg",
                     name=_("Messages"),
@@ -1502,6 +1510,10 @@ class OrgCRUDL(SmartCRUDL):
                     href="campaigns.campaign_list",
                     perm="campaigns.campaign_list",
                 ),
+
+               
+
+
                 self.create_menu_item(
                     menu_id="ticket",
                     name=_("Tickets"),
