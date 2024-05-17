@@ -11,6 +11,9 @@
 		},
 		{
 			"path": "../../Mista-PC/projects/mista_v4_service_hub/ussd_golang"
+		},
+		{
+			"path": "../Premium_portal"
 		}
 	],
 	"settings": {
